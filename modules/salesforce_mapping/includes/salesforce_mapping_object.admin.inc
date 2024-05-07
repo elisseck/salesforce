@@ -63,7 +63,9 @@ function salesforce_mapping_object_form_validate($form, &$form_state) {
   $mapping_object = $form_state['salesforce_mapping_object'];
   $entity_type = isset($values['entity_type']) ? $values['entity_type'] : $mapping_object->entity_type;
   $entity_id = isset($values['entity_id']) ? $values['entity_id'] : $mapping_object->entity_id;
-  $entity = entity_load_single($entity_type, $entity_id);
+  $entity = entity_load($entity_type, $entity_id);
+  $entity =  reset($entity);
+
 
   if (!$entity) {
     // Invalid entity.
@@ -96,7 +98,7 @@ function salesforce_mapping_object_form_validate($form, &$form_state) {
   }
   $mapping = reset($mappings);
 
-  // Convert to 18-char if 15-char ID was given. 
+  // Convert to 18-char if 15-char ID was given.
   $values['salesforce_id'] = Salesforce::convertId($values['salesforce_id']);
 
   // Check for existing mapping based on the Salesforce Id.
@@ -145,7 +147,7 @@ function salesforce_mapping_object_form_save_mapping_submit($form, &$form_state)
   $mapping_object->last_sync_action = $form_state['values']['submit'] == 'Update mapping' ? 'relink' : 'created';
   $mapping_object->entity_updated = REQUEST_TIME;
   $mapping_object->save();
-  drupal_set_message(t('Salesforce mapping object has been saved.'));
+  backdrop_set_message(t('Salesforce mapping object has been saved.'));
   $uri = $mapping_object->uri();
   $form_state['redirect'] = $uri['path'];
 }
@@ -243,7 +245,7 @@ function salesforce_mapping_object_filter_form($form, &$form_state) {
     '#title' => t('From'),
     '#default_value' => $values['last_sync']['from'],
     '#description' => t('Format: %time.', array(
-      '%time' => format_date(time(), 'custom', 'Y-m-d H:i:s'),
+        '%time' => format_date(time(), 'custom', 'Y-m-d H:i:s'),
       )
     ),
   );
@@ -393,7 +395,7 @@ function salesforce_mapping_object_overview_table($header, $mapping_id = NULL) {
       $mapping_object_entities = array();
       if ($mapping_id) {
         foreach ($mapping_object_results as $key => $entity) {
-          $mapping_object_entities[] = entity_revision_load('salesforce_mapping_object', $key);
+          $mapping_object_entities[] = entity_plus_revision_load('salesforce_mapping_object', $key);
         }
       }
       else {
@@ -421,12 +423,12 @@ function salesforce_mapping_object_overview_table($header, $mapping_id = NULL) {
         $rows[$row_id][$field] = $mapping_object_results[$id]->{$field};
       }
       $rows[$row_id]['operations'] = l(t('view'), $uri['path']) . ' ' .
-        l(t('edit'), $uri['path'] . '/edit', array('query' => drupal_get_destination())) . ' ' .
-        l(t('delete'), 'admin/content/salesforce/' . $wrapper->salesforce_id->value() . '/delete', array('query' => drupal_get_destination()));
+        l(t('edit'), $uri['path'] . '/edit', array('query' => backdrop_get_destination())) . ' ' .
+        l(t('delete'), 'admin/content/salesforce/' . $wrapper->salesforce_id->value() . '/delete', array('query' => backdrop_get_destination()));
     }
   }
 
-  $table['search'] = drupal_get_form('salesforce_mapping_object_filter_form');
+  $table['search'] = backdrop_get_form('salesforce_mapping_object_filter_form');
   if ($mapping_id) {
     $table['table'] = array(
       '#theme' => 'table',
@@ -435,7 +437,7 @@ function salesforce_mapping_object_overview_table($header, $mapping_id = NULL) {
     );
   }
   else {
-    $table['table'] = drupal_get_form('salesforce_mapping_object_table_form', $header, $rows, $mapping_id);
+    $table['table'] = backdrop_get_form('salesforce_mapping_object_table_form', $header, $rows, $mapping_id);
   }
   $table['pager'] = array('#theme' => 'pager', '#weight' => 99);
 
@@ -488,7 +490,8 @@ function salesforce_mapping_object_table_form_submit($form, &$form_state) {
     // @TODO switch to using the Batch API for processing.
     foreach ($values['entities'] as $value) {
       list($mapping_id) = explode('-', $value);
-      $mapping = entity_load_single('salesforce_mapping_object', $mapping_id);
+      $mapping = entity_load('salesforce_mapping_object', $mapping_id);
+      $mapping =  reset($mapping);
       // Set entity_updated to now to ensure push occurs.
       $mapping->entity_updated = REQUEST_TIME;
       $wrapper = entity_metadata_wrapper('salesforce_mapping_object', $mapping);

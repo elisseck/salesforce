@@ -63,7 +63,7 @@ function salesforce_push_entity_crud($entity_type, $entity, $sf_sync_trigger) {
       }
 
       if (isset($mapping->push_async) && $mapping->push_async) {
-        $queue = DrupalQueue::get(SALESFORCE_PUSH_QUEUE);
+        $queue = BackdropQueue::get(SALESFORCE_PUSH_QUEUE);
         $queue->createItem(array(
           'entity_type' => $entity_type,
           'entity_id' => $entity_id,
@@ -91,7 +91,8 @@ function salesforce_push_mapping_object_form_submit($form, &$form_state) {
   $values = $form_state['values'];
   $entity_type = $values['entity_type'];
   $entity_id = $values['entity_id'];
-  $entity = entity_load_single($entity_type, $entity_id);
+  $entity = entity_load($entity_type, $entity_id);
+  $entity = reset($entity);
   $trigger = SALESFORCE_MAPPING_SYNC_DRUPAL_UPDATE;
   salesforce_push_entity_crud($entity_type, $entity, $trigger);
   // @TODO we can do better than this:
@@ -123,7 +124,7 @@ function salesforce_push_sync_rest($entity_type, $entity, $mapping, $sf_sync_tri
 
   $mapping_object = salesforce_mapping_object_load_by_drupal($entity_type, $entity_id, TRUE);
   // Allow other modules to define or alter the mapping object.
-  drupal_alter('salesforce_push_mapping_object', $mapping_object, $entity, $mapping);
+  backdrop_alter('salesforce_push_mapping_object', $mapping_object, $entity, $mapping);
 
   $synced_entity = array(
     'entity_wrapper' => $entity_wrapper,
@@ -314,14 +315,15 @@ function salesforce_push_queue_info() {
  * Implements hook_cron().
  */
 function salesforce_push_cron() {
+  $config = config('salesforce_push.settings');
   $sfapi = salesforce_get_api();
   if (!$sfapi->isAuthorized()) {
     return;
   }
 
-  $queue = DrupalQueue::get(SALESFORCE_PUSH_QUEUE);
-  $limit = variable_get('salesforce_push_limit', 50);
-  $use_soap = module_exists('salesforce_soap') && variable_get('salesforce_soap_batch_enable', TRUE);
+  $queue = BackdropQueue::get(SALESFORCE_PUSH_QUEUE);
+  $limit = $config->get('salesforce_push_limit');
+  $use_soap = module_exists('salesforce_soap') && $config->get('salesforce_soap_batch_enable');
   $entity_ids = array();
 
   $delta = 0;
@@ -349,7 +351,8 @@ function salesforce_push_cron() {
     }
 
     // Attempt to load our entity from the queue item.
-    $entity = entity_load_single($entity_type, $entity_id);
+    $entity = entity_load($entity_type, $entity_id);
+    $entity =  reset($entity);
 
     // If the entity fails to load, remove it from the queue. This can happen
     // if we're processing records asynchronously and it was deleted from SF
@@ -367,10 +370,10 @@ function salesforce_push_cron() {
       $queue->deleteItem($item);
       continue;
     }
-    
+
     $mapping_object = salesforce_mapping_object_load_by_drupal($entity_type, $entity_id);
     // Allow other modules to define or alter the mapping object.
-    drupal_alter('salesforce_push_mapping_object', $mapping_object, $entity, $mapping);
+    backdrop_alter('salesforce_push_mapping_object', $mapping_object, $entity, $mapping);
 
     if ($item->data['trigger'] == SALESFORCE_MAPPING_SYNC_DRUPAL_DELETE && $mapping_object) {
       $delete_list[$delta] = $mapping_object->salesforce_id;
@@ -428,9 +431,13 @@ function salesforce_push_cron() {
   }
 
   // Use soap API to batch process records.
-  $soap = new SalesforceSoapPartner($sfapi, variable_get('salesforce_partner_wsdl', libraries_get_path('salesforce') . '/soapclient/partner.wsdl.xml'));
+  $service = $config->get('salesforce_partner_wsdl');
+  if (empty($service) || !isset($service)){
+    $service= libraries_get_path('salesforce') . '/soapclient/partner.wsdl.xml';
+  }
+  $soap = new SalesforceSoapPartner($sfapi, $service);
   if (!empty($delete_list)) {
-    $results = $soap-trySoap('delete', $delete_list);
+    $results = $soap->trySoap('delete', $delete_list);
     salesforce_push_process_soap_results('Delete', $results, $synced_entities);
   }
 
@@ -469,7 +476,7 @@ function salesforce_push_process_soap_results($op, $results, $synced_entities) {
     $synced_entity = $synced_entities[$key];
     $mapping_object = empty($synced_entity['mapping_object']) ? FALSE : $synced_entity['mapping_object'];
     if ($result->success) {
-      if (drupal_strtolower($op) == 'delete' && $mapping_object) {
+      if (backdrop_strtolower($op) == 'delete' && $mapping_object) {
         $mapping_object->delete();
         return;
       }
@@ -564,7 +571,7 @@ function salesforce_push_map_params($mapping, $entity_wrapper, $use_soap = FALSE
     $params[$fieldmap['salesforce_field']['name']] = $value;
   }
 
-  drupal_alter('salesforce_push_params', $params, $mapping, $entity_wrapper);
+  backdrop_alter('salesforce_push_params', $params, $mapping, $entity_wrapper);
 
   return $params;
 }

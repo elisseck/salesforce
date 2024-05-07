@@ -1,0 +1,5 @@
+{
+    "_config_name": "salesforce_mapping.settings",
+    "salesforce_limit_to_triggerable": true,
+    "salesforce_limit_to_updateable": true
+}

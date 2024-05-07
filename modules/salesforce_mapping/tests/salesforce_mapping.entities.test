@@ -8,7 +8,7 @@
 module_load_include('test', 'salesforce_mapping', 'tests/salesforce_mapping');
 
 /**
- * Tests the entities storing the Drupal to Salesforce mapping.
+ * Tests the entities storing the Backdrop to Salesforce mapping.
  */
 class SalesforceMappingEntitiesTestCase extends SalesforceMappingTestCase {
 
@@ -18,7 +18,7 @@ class SalesforceMappingEntitiesTestCase extends SalesforceMappingTestCase {
   public static function getInfo() {
     return array(
       'name' => 'Mapping Entities',
-      'description' => 'Tests the entities storing the Drupal to Salesforce mapping.',
+      'description' => 'Tests the entities storing the Backdrop to Salesforce mapping.',
       'group' => 'Salesforce',
     );
   }
@@ -37,9 +37,12 @@ class SalesforceMappingEntitiesTestCase extends SalesforceMappingTestCase {
       'sync_triggers' => 0x0002,
       'salesforce_object_type' => 'bar',
       'salesforce_record_type' => 'baz',
-      'salesforce_record_types_allowed' => array("baz" => "baz", "bogus" => "0"),
-      'drupal_entity_type' => 'node',
-      'drupal_bundle' => 'story',
+      'salesforce_record_types_allowed' => array(
+        "baz" => "baz",
+        "bogus" => "0",
+      ),
+      'backdrop_entity_type' => 'node',
+      'backdrop_bundle' => 'story',
       'field_mappings' => array(
         'foo' => 'bar',
         'baz' => array(
@@ -109,7 +112,7 @@ class SalesforceMappingEntitiesTestCase extends SalesforceMappingTestCase {
     $this->example_map2 = $this->example_map;
     $this->example_map2['name'] = 'bazbang';
     $this->example_map2['label'] = 'Baz Bang';
-    $this->example_map2['drupal_bundle'] = 'event';
+    $this->example_map2['backdrop_bundle'] = 'event';
     $test_map2 = entity_create('salesforce_mapping', $this->example_map2);
     entity_save('salesforce_mapping', $test_map2);
 
@@ -138,28 +141,28 @@ class SalesforceMappingEntitiesTestCase extends SalesforceMappingTestCase {
     $this->assertEqual(2, count($result), 'Loading maps without stating a specific property returned 2 maps.');
 
     // salesforce_mapping_load_multiple() single property.
-    $result = salesforce_mapping_load_multiple(array('drupal_bundle' => 'event'));
-    $this->assertTrue(is_array($result), 'Loading maps stating the drupal_bundle returned an array.');
-    $this->assertEqual(1, count($result), 'Loading maps stating the drupal_bundle property returned 1 map.');
+    $result = salesforce_mapping_load_multiple(array('backdrop_bundle' => 'event'));
+    $this->assertTrue(is_array($result), 'Loading maps stating the backdrop_bundle returned an array.');
+    $this->assertEqual(1, count($result), 'Loading maps stating the backdrop_bundle property returned 1 map.');
     $map = reset($result);
-    $this->assertEqual($test_map2->label, $map->label, 'Loading maps stating the drupal_bundle property returned the expected map.');
-    $result = salesforce_mapping_load_multiple(array('drupal_entity_type' => 'node'));
-    $this->assertEqual(2, count($result), 'Loading maps stating the drupal_entity_type property returned 2 maps.');
+    $this->assertEqual($test_map2->label, $map->label, 'Loading maps stating the backdrop_bundle property returned the expected map.');
+    $result = salesforce_mapping_load_multiple(array('backdrop_entity_type' => 'node'));
+    $this->assertEqual(2, count($result), 'Loading maps stating the backdrop_entity_type property returned 2 maps.');
 
     // salesforce_mapping_load_multiple() multiple property.
-    $result = salesforce_mapping_load_multiple(array('drupal_entity_type' => 'node', 'drupal_bundle' => 'event'));
-    $this->assertTrue(is_array($result), 'Loading maps stating the drupal_entity_type and drupal_bundle properties returned an array.');
-    $this->assertEqual(1, count($result), 'Loading maps stating the drupal_entity_type and drupal_bundle properties returned 1 map.');
+    $result = salesforce_mapping_load_multiple(array('backdrop_entity_type' => 'node', 'backdrop_bundle' => 'event'));
+    $this->assertTrue(is_array($result), 'Loading maps stating the backdrop_entity_type and backdrop_bundle properties returned an array.');
+    $this->assertEqual(1, count($result), 'Loading maps stating the backdrop_entity_type and backdrop_bundle properties returned 1 map.');
     $map = reset($result);
-    $this->assertEqual($test_map2->label, $map->label, 'Loading maps stating the drupal_entity_type and drupal_bundle properties returned the expected map.');
+    $this->assertEqual($test_map2->label, $map->label, 'Loading maps stating the backdrop_entity_type and backdrop_bundle properties returned the expected map.');
     $result = salesforce_mapping_load_multiple(array('salesforce_object_type' => 'bar', 'salesforce_record_type' => 'baz'));
     $this->assertEqual(2, count($result), 'Loading maps stating the salesforce_object_type and salesforce_record_type returned 2 maps.');
 
     // salesforce_mapping_load_multiple() retreive nothing.
-    $result = salesforce_mapping_load_multiple(array('drupal_entity_type' => 'nothing'));
-    $this->assertFalse(is_object($result), 'Loading maps stating a drupal_entity_type that does not exist does not return an object.');
-    $this->assertTrue(is_array($result), 'Loading maps stating a drupal_entity_type that does not exist does returns an array.');
-    $this->assertTrue(empty($result), 'Loading maps stating a drupal_entity_type that does not exist returns an empty array.');
+    $result = salesforce_mapping_load_multiple(array('backdrop_entity_type' => 'nothing'));
+    $this->assertFalse(is_object($result), 'Loading maps stating a backdrop_entity_type that does not exist does not return an object.');
+    $this->assertTrue(is_array($result), 'Loading maps stating a backdrop_entity_type that does not exist does returns an array.');
+    $this->assertTrue(empty($result), 'Loading maps stating a backdrop_entity_type that does not exist returns an empty array.');
   }
 
   /**
@@ -185,8 +188,8 @@ class SalesforceMappingEntitiesTestCase extends SalesforceMappingTestCase {
 
     // salesforce_mapping_load_multiple() excludes invalid types.
     $result = salesforce_mapping_load_multiple(array('salesforce_record_type' => 'bogus'));
-    $this->assertTrue(is_array($result), 'Loading maps stating the drupal_bundle returned an array.');
-    $this->assertEqual(0, count($result), 'Loading maps stating the drupal_bundle property returned 0 map.');
+    $this->assertTrue(is_array($result), 'Loading maps stating the backdrop_bundle returned an array.');
+    $this->assertEqual(0, count($result), 'Loading maps stating the backdrop_bundle property returned 0 map.');
     $map = reset($result);
   }
 
@@ -240,13 +243,13 @@ class SalesforceMappingEntitiesTestCase extends SalesforceMappingTestCase {
     $record_map2 = entity_create('salesforce_mapping_object', $record2);
     entity_save('salesforce_mapping_object', $record_map2);
 
-    // salesforce_mapping_object_load_by_drupal() retreive map.
-    $result = salesforce_mapping_object_load_by_drupal($record_map->entity_type, $record_map->entity_id);
-    $this->assertEqual($record_map->salesforce_id, $result->salesforce_id, 'Loading map by drupal retreived correct map.');
+    // salesforce_mapping_object_load_by_backdrop() retreive map.
+    $result = salesforce_mapping_object_load_by_backdrop($record_map->entity_type, $record_map->entity_id);
+    $this->assertEqual($record_map->salesforce_id, $result->salesforce_id, 'Loading map by backdrop retreived correct map.');
 
-    // salesforce_mapping_object_load_by_drupal() retreive nothing.
-    $result = salesforce_mapping_object_load_by_drupal('nothing', $record_map->entity_id);
-    $this->assertFalse($result, 'Loading map by drupal for something that does not exist returns FALSE.');
+    // salesforce_mapping_object_load_by_backdrop() retreive nothing.
+    $result = salesforce_mapping_object_load_by_backdrop('nothing', $record_map->entity_id);
+    $this->assertFalse($result, 'Loading map by backdrop for something that does not exist returns FALSE.');
 
     // salesforce_mapping_object_load_by_sfid() retreive map.
     $result = salesforce_mapping_object_load_by_sfid($record_map->salesforce_id);

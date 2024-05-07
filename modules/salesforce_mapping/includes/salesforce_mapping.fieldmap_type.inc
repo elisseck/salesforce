@@ -70,20 +70,20 @@ function salesforce_mapping_salesforce_mapping_fieldmap_type() {
 function salesforce_mapping_property_fieldmap_options($entity_type, $entity_bundle = NULL, $include_entities = FALSE) {
   $options = array('' => t('-- Select --'));
 
-  $properties = entity_get_all_property_info($entity_type);
+  $properties = entity_plus_get_all_property_info($entity_type);
   if (isset($entity_bundle)) {
-    $info = entity_get_property_info($entity_type);
+    $info = entity_plus_get_property_info($entity_type);
     $properties = $info['properties'];
     if (isset($info['bundles'][$entity_bundle])) {
       $properties += $info['bundles'][$entity_bundle]['properties'];
     }
   }
   else {
-    $properties = entity_get_all_property_info($entity_type);
+    $properties = entity_plus_get_all_property_info($entity_type);
   }
 
   foreach ($properties as $key => $property) {
-    $type = isset($property['type']) ? entity_property_extract_innermost_type($property['type']) : 'text';
+    $type = isset($property['type']) ? entity_plus_property_extract_innermost_type($property['type']) : 'text';
     $is_entity = ($type == 'entity') || (bool) entity_get_info($type);
     // Leave entities out of this.
     if (($is_entity && $include_entities) || (!$is_entity && !$include_entities)) {
@@ -159,7 +159,8 @@ function salesforce_mapping_related_entity_fieldmap_pull_value($entity_wrapper, 
   $mapping_object = salesforce_mapping_object_load_by_sfid($sf_object[$field_map['salesforce_field']['name']]);
   $info = $entity_wrapper->info();
   if ($mapping_object && !isset($info['relation_type'])) {
-    $entity = entity_load_single($mapping_object->entity_type, $mapping_object->entity_id);
+    $entity = entity_load($mapping_object->entity_type, $mapping_object->entity_id);
+    $entity = reset($entity);
     return entity_metadata_wrapper($mapping_object->entity_type, $entity);
   }
   // Handle relations.
@@ -235,7 +236,7 @@ function salesforce_mapping_related_entity_fieldmap_pull_value($entity_wrapper, 
  *   if none are found.
  */
 function salesforce_mapping_relation_endpoints_fieldmap_options($entity_type, $entity_bundle) {
-  $properties = entity_get_all_property_info($entity_type);
+  $properties = entity_plus_get_all_property_info($entity_type);
   if (isset($properties['endpoints'])) {
     return array('endpoints' => $properties['endpoints']['label']);
   }
@@ -264,7 +265,9 @@ function salesforce_mapping_relation_endpoints_fieldmap_pull_value($entity_wrapp
   foreach ($field_map['salesforce_field'] as $sf_field) {
     $mapping_object = salesforce_mapping_object_load_by_sfid($sf_object[$sf_field['name']]);
     if ($mapping_object) {
-      $entity = entity_load_single($mapping_object->entity_type, $mapping_object->entity_id);
+      $entity = entity_load($mapping_object->entity_type, $mapping_object->entity_id);
+      $entity = reset($entity);
+      //$entity = entity_plus_load_single($mapping_object->entity_type, $mapping_object->entity_id);
       $values[] = entity_metadata_wrapper($mapping_object->entity_type, $entity);
     }
   }

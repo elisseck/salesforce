@@ -67,11 +67,11 @@ function salesforce_drush_command() {
         'description' => 'Format to output the objects. Use "print_r" for print_r (default), "export" for var_export, and "json" for JSON.',
         'example-value' => 'export',
       ),
-      'where' =>array(
+      'where' => array(
         'description' => 'A WHERE clause to add to the SOQL query',
         'example-value' => 'isDeleted = TRUE',
       ),
-      'fields' =>array(
+      'fields' => array(
         'description' => 'A comma-separated list fields to select in the SOQL query. If absent, an API call is used to find all fields',
         'example-value' => 'Id, LastName',
       ),
@@ -174,11 +174,11 @@ function drush_salesforce_sf_describe_object($object_name = NULL) {
   $rows[] = array('Name', $object['name']);
   $rows[] = array(
     'Fields',
-    isset($object['fields']) ? count($object['fields']) : 0,
+    isset($object['fields'])?count($object['fields']) : 0,
   );
   $rows[] = array(
     'Child Relationships',
-    isset($object['childRelationships']) ? count($object['childRelationships']) : 0,
+    isset($object['childRelationships'])?count($object['childRelationships']) : 0,
   );
   $rows[] = array(
     'Searchable',

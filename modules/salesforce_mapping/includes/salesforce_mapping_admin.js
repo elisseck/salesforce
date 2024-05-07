@@ -1,5 +1,5 @@
 (function ($) {
-  Drupal.behaviors.salesforceMappingAdmin = {
+  Backdrop.behaviors.salesforceMappingAdmin = {
     attach: function(context) {
       if ($('a#salesforce-field-mappings-reset-key').length) {
         $('a#salesforce-field-mappings-reset-key').once('sf-reset-key', function() {

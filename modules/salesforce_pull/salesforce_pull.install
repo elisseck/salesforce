@@ -14,3 +14,31 @@ function salesforce_pull_uninstall() {
     ->condition('name', 'salesforce_pull%', 'LIKE')
     ->execute();
 }
+
+/**
+ * Migrate salesforce_pull variables to config.
+ */
+function salesforce_pull_update_1000() {
+  $config = config('salesforce_pull.settings');
+  $config->set('salesforce_pull_webhook_enable', update_variable_get('salesforce_pull_webhook_enable', array()));
+  $config->set('salesforce_pull_webhook_key', update_variable_get('salesforce_pull_webhook_key', ''));
+  $config->set('salesforce_pull_throttle', update_variable_get('salesforce_pull_throttle', '5'));
+  $config->set('salesforce_pull_last_sync', update_variable_get('salesforce_pull_last_sync', '0'));
+  $config->set('salesforce_pull_max_queue_size', update_variable_get('salesforce_pull_max_queue_size', '100000'));
+  $config->set('salesforce_pull_last_sync_type', update_variable_get('salesforce_pull_last_sync_type', ''));
+  $config->set('salesforce_pull_delete_last_type', update_variable_get('salesforce_pull_delete_last_type', ''));
+  $config->set('salesforce_pull_delete_last_merge_fieldstype', update_variable_get('salesforce_pull_delete_last_merge_fieldstype', ''));
+  $config->set('salesforce_pull_last_sync_merge_fieldstype', update_variable_get('salesforce_pull_last_sync_merge_fieldstype', ''));
+  $config->save();
+
+  update_variable_del('salesforce_pull_webhook_enable');
+  update_variable_del('salesforce_pull_webhook_key');
+  update_variable_del('salesforce_pull_throttle');
+  update_variable_del('salesforce_pull_last_sync');
+  update_variable_del('salesforce_pull_max_queue_size');
+  update_variable_del('salesforce_pull_last_sync_type');
+  update_variable_del('salesforce_pull_delete_last_type');
+  update_variable_del('salesforce_pull_delete_last_merge_fieldstype');
+  update_variable_del('salesforce_pull_last_sync_merge_fieldstype');
+}
+

@@ -42,7 +42,9 @@ class SalesforceMappingUIController extends EntityDefaultUIController {
 
     $rows = array();
     foreach ($entities as $entity) {
-      $id = entity_id($this->entityType, $entity);
+//      print_r($entity);
+//      die;
+      $id = entity_plus_id($this->entityType, $entity);
       $weight = isset($form_state['values']['table'][$id]['weight']) ? $form_state['values']['table'][$id]['weight'] : $entity->weight;
       $rows[$id]['#row'] = $this->overviewTableRow(NULL, $id, $entity);
       $rows[$id]['#weight'] = $weight;
@@ -54,11 +56,11 @@ class SalesforceMappingUIController extends EntityDefaultUIController {
     }
 
     $form['table'] = $rows + array(
-      '#theme' => 'salesforce_mapping_overview_tabledrag_form',
-      '#tree' => TRUE,
-      '#header' => $this->overviewTableHeaders(NULL, $rows),
-      '#entity_type' => $this->entityType,
-    );
+        '#theme' => 'salesforce_mapping_overview_tabledrag_form',
+        '#tree' => TRUE,
+        '#header' => $this->overviewTableHeaders(NULL, $rows),
+        '#entity_type' => $this->entityType,
+      );
 
     $form['pager'] = array('#theme' => 'pager');
 
@@ -82,9 +84,9 @@ class SalesforceMappingUIController extends EntityDefaultUIController {
     if (!empty($form_state['values']['table'])) {
       $entities = entity_load($this->entityType, array_keys($form_state['values']['table']));
       foreach ($entities as $key => $entity) {
-        $id = entity_id($this->entityType, $entity);
+        $id = entity_plus_id($this->entityType, $entity);
         $entity->weight = $form_state['values']['table'][$id]['weight'];
-        entity_save($this->entityType, $entities[$key]);
+        entity_plus_save($this->entityType, $entities[$key]);
       }
     }
   }
@@ -118,7 +120,7 @@ class SalesforceMappingUIController extends EntityDefaultUIController {
  * @ingroup themeable
  */
 function theme_salesforce_mapping_overview_tabledrag_form($variables) {
-  drupal_add_tabledrag('entity-ui-overview-form', 'order', 'sibling', 'entity-ui-weight');
+  backdrop_add_tabledrag('entity-ui-overview-form', 'order', 'sibling', 'entity-ui-weight');
   $form = $variables['form'];
   $rows = array();
   foreach (element_children($form) as $key) {
@@ -135,5 +137,5 @@ function theme_salesforce_mapping_overview_tabledrag_form($variables) {
     '#empty' => t('None.'),
     '#attributes' => array('id' => 'entity-ui-overview-form'),
   );
-  return drupal_render($render);
+  return backdrop_render($render);
 }

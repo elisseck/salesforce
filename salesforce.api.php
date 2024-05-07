@@ -219,8 +219,8 @@ function hook_salesforce_query_alter(SalesforceSelectQuery &$query) {
  *   The salesforce response
  * @param array $synced_entity
  *   Entity data for this push. This array has 4 keys
- *     'entity_wrapper': entity_metadata_wrapper() for the Drupal entity 
- *     'mapping_object': salesforce mapping object record, if it exists. 
+ *     'entity_wrapper': entity_metadata_wrapper() for the Drupal entity
+ *     'mapping_object': salesforce mapping object record, if it exists.
  *       Otherwise null
  *     'queue_item': If this is a SOAP push, Drupal queue item corresponding to
  *       this push attempt. Otherwise FALSE.
@@ -231,7 +231,7 @@ function hook_salesforce_push_success($op, $result, $synced_entity) {
   if (!empty($synced_entity['mapping_object'])) {
     $mapping_object = $synced_entity['mapping_object'];
   }
-  if (drupal_strtolower($op) == 'delete' && $mapping_object) {
+  if (backdrop_strtolower($op) == 'delete' && $mapping_object) {
     $mapping_object->delete();
     return;
   }
@@ -271,8 +271,8 @@ function hook_salesforce_push_success($op, $result, $synced_entity) {
  *   The salesforce response
  * @param array $synced_entity
  *   Entity data for this push. This array has 4 keys
- *     'entity_wrapper': entity_metadata_wrapper() for the Drupal entity 
- *     'mapping_object': salesforce mapping object record, if it exists. 
+ *     'entity_wrapper': entity_metadata_wrapper() for the Drupal entity
+ *     'mapping_object': salesforce mapping object record, if it exists.
  *       Otherwise null
  *     'queue_item': If this is a SOAP push, Drupal queue item corresponding to
  *       this push attempt. Otherwise FALSE.

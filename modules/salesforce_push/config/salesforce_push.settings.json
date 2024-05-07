@@ -1,0 +1,6 @@
+{
+    "_config_name": "salesforce_push.settings",
+    "salesforce_push_limit": "50",
+    "salesforce_soap_batch_enable": true,
+    "salesforce_partner_wsdl": ""
+}

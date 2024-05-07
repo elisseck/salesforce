@@ -20,15 +20,12 @@ class Salesforce {
    *   Salesforce secret to connect to your Salesforce instance.
    */
   public function __construct($consumer_key, $consumer_secret = '') {
+    $config = config('salesforce.settings');
     $this->consumer_key = $consumer_key;
     $this->consumer_secret = $consumer_secret;
-    $this->login_url = variable_get('salesforce_endpoint', SALESFORCE_DEFAULT_ENDPOINT);
+    $this->login_url = $config->get('salesforce_endpoint');
 
-    $this->rest_api_version = variable_get('salesforce_api_version', array(
-      "label" => "Winter '14",
-      "url" => "/services/data/v29.0/",
-      "version" => "29.0",
-    ));
+    $this->rest_api_version = $config->get('salesforce_api_version');
   }
 
   /**
@@ -37,6 +34,7 @@ class Salesforce {
    *
    * @param string $sfid15
    *   15-character case-sensitive Salesforce ID
+   *
    * @return string
    *   18-character case-insensitive Salesforce ID
    */
@@ -60,18 +58,19 @@ class Salesforce {
 
   /**
    * Given a Salesforce ID, return the corresponding SObject name. (Based on
-   *  keyPrefix from object definition, @see
-   *  https://developer.salesforce.com/forums/?id=906F0000000901ZIAQ )
-   *
-   * @param string $sfid
+   *  keyPrefix from object definition, @param string $sfid
    *   15- or 18-character Salesforce ID
+   *
    * @return string
    *   sObject name, e.g. "Account", "Contact", "my__Custom_Object__c" or FALSE
    *   if no match could be found.
    * @throws SalesforceException
+   * @see
+   *  https://developer.salesforce.com/forums/?id=906F0000000901ZIAQ )
+   *
    */
   public function getSobjectType($sfid) {
-    $objects = $this->objects(array('keyPrefix' => substr($sfid, 0, 3)));
+    $objects = $this->objects(['keyPrefix' => substr($sfid, 0, 3)]);
     if (count($objects) == 1) {
       // keyPrefix is unique across objects. If there is exactly one return value from objects(), then we have a match.
       $object = reset($objects);
@@ -109,7 +108,7 @@ class Salesforce {
    *
    * @throws SalesforceException
    */
-  public function apiCall($path, $params = array(), $method = 'GET', $type = 'rest') {
+  public function apiCall($path, $params = [], $method = 'GET', $type = 'rest') {
     if (!$this->getAccessToken()) {
       $this->refreshToken();
     }
@@ -125,7 +124,7 @@ class Salesforce {
         // Rebuild our request and repeat request.
         $this->response = $this->apiHttpRequest($path, $params, $method, $type);
         // Throw an error if we still have bad response.
-        if (!in_array($this->response->code, array(200, 201, 204))) {
+        if (!in_array($this->response->code, [200, 201, 204])) {
           throw new SalesforceException($this->response->error, $this->response->code);
         }
 
@@ -144,29 +143,31 @@ class Salesforce {
         }
     }
 
-    $data = drupal_json_decode($this->response->data);
-     
-     if (empty($data[0])) {
-       $this->checkResponseDataForApiError($data);
-     }
-     else {
-       foreach ($data as $item) {
-         $this->checkResponseDataForApiError($item);
-       }
- 
-       if (count($data) == 1) {
-         $data = $data[0];
-       }
-     }
+    $data = backdrop_json_decode($this->response->data);
+
+    if (empty($data[0])) {
+      $this->checkResponseDataForApiError($data);
+    }
+    else {
+      foreach ($data as $item) {
+        $this->checkResponseDataForApiError($item);
+      }
+
+      if (count($data) == 1) {
+        $data = $data[0];
+      }
+    }
 
     return $data;
   }
 
   /**
-   * Private helper that throws an exception if a API error is found in the response data.
+   * Private helper that throws an exception if a API error is found in the
+   * response data.
    *
    * @param array $data
    *   Array of salesforce api response data.
+   *
    * @throws SalesforceException
    */
   private function checkResponseDataForApiError($data) {
@@ -199,16 +200,16 @@ class Salesforce {
    */
   protected function apiHttpRequest($path, $params, $method, $type = 'rest') {
     $url = $this->getApiEndPoint($type) . $path;
-    $headers = array(
+    $headers = [
       'Authorization' => 'OAuth ' . $this->getAccessToken(),
       'Content-type' => 'application/json',
-    );
-    $data = drupal_json_encode($params);
+    ];
+    $data = backdrop_json_encode($params);
     return $this->httpRequest($url, $data, $headers, $method);
   }
 
   /**
-   * Make the HTTP request. Wrapper around drupal_http_request().
+   * Make the HTTP request. Wrapper around backdrop_http_request().
    *
    * @param string $url
    *   Path to make request from.
@@ -222,22 +223,22 @@ class Salesforce {
    * @return object
    *   Salesforce response object.
    */
-  protected function httpRequest($url, $data, $headers = array(), $method = 'GET') {
+  protected function httpRequest($url, $data, $headers = [], $method = 'GET') {
 
-    // If method is GET, data should not be sent otherwise drupal_http_request()
+    // If method is GET, data should not be sent otherwise backdrop_http_request()
     // will set Content-Length header which confuses some proxies like Squid.
     if ($method === 'GET') {
       $data = NULL;
     }
 
     // Build the request, including path and headers. Internal use.
-    $options = array(
+    $options = [
       'method' => $method,
       'headers' => $headers,
       'data' => $data,
-    );
+    ];
 
-    return drupal_http_request($url, $options);
+    return backdrop_http_request($url, $options);
   }
 
   /**
@@ -250,7 +251,7 @@ class Salesforce {
    *   Complete URL endpoint for API access.
    */
   public function getApiEndPoint($api_type = 'rest') {
-    $url = &drupal_static(__FUNCTION__ . $api_type);
+    $url = &backdrop_static(__FUNCTION__ . $api_type);
     if (!isset($url)) {
       // Special handling for apexrest, since it's not in the identity object.
       if ($api_type == 'apexrest') {
@@ -268,7 +269,8 @@ class Salesforce {
    * Get the SF instance URL. Useful for linking to objects.
    */
   public function getInstanceUrl() {
-    return variable_get('salesforce_instance_url', '');
+    $config = config('salesforce.settings');
+    return $config->get('salesforce_instance_url');
   }
 
   /**
@@ -278,14 +280,15 @@ class Salesforce {
    *   URL to set.
    */
   protected function setInstanceUrl($url) {
-    variable_set('salesforce_instance_url', $url);
+    config_set('salesforce.settings', 'salesforce_instance_url', $url);
   }
 
   /**
    * Get the access token.
    */
   public function getAccessToken() {
-    return variable_get('salesforce_access_token', FALSE);
+    $config = config('salesforce.settings');
+    return $config->get('salesforce_access_token');
   }
 
   /**
@@ -297,14 +300,15 @@ class Salesforce {
    *   Access token from Salesforce.
    */
   protected function setAccessToken($token) {
-    variable_set('salesforce_access_token', $token);
+    config_set('salesforce.settings', 'salesforce_access_token', $token);
   }
 
   /**
    * Get refresh token.
    */
   protected function getRefreshToken() {
-    return variable_get('salesforce_refresh_token', '');
+    $config = config('salesforce.settings');
+    return $config->get('salesforce_refresh_token');
   }
 
   /**
@@ -314,7 +318,8 @@ class Salesforce {
    *   Refresh token from Salesforce.
    */
   protected function setRefreshToken($token) {
-    variable_set('salesforce_refresh_token', $token);
+
+    config_set('salesforce.settings', 'salesforce_refresh_token', $token);
   }
 
   /**
@@ -328,18 +333,17 @@ class Salesforce {
       throw new SalesforceException(t('There is no refresh token.'));
     }
 
-    $data = drupal_http_build_query(array(
+    $data = backdrop_http_build_query([
       'grant_type' => 'refresh_token',
       'refresh_token' => $refresh_token,
       'client_id' => $this->consumer_key,
       'client_secret' => $this->consumer_secret,
-    ));
-
+    ]);
     $url = $this->login_url . '/services/oauth2/token';
-    $headers = array(
+    $headers = [
       // This is an undocumented requirement on Salesforce's end.
       'Content-Type' => 'application/x-www-form-urlencoded',
-    );
+    ];
     $response = $this->httpRequest($url, $data, $headers, 'POST');
 
     if ($response->code != 200) {
@@ -347,7 +351,7 @@ class Salesforce {
       throw new SalesforceException(t('Unable to get a Salesforce access token.'), $response->code);
     }
 
-    $data = drupal_json_decode($response->data);
+    $data = backdrop_json_decode($response->data);
 
     $this->checkResponseDataForApiError($data);
 
@@ -365,16 +369,16 @@ class Salesforce {
    * @throws SalesforceException
    */
   protected function setIdentity($id) {
-    $headers = array(
+    $headers = [
       'Authorization' => 'OAuth ' . $this->getAccessToken(),
       'Content-type' => 'application/json',
-    );
+    ];
     $response = $this->httpRequest($id, NULL, $headers);
     if ($response->code != 200) {
       throw new SalesforceException(t('Unable to access identity service.'), $response->code);
     }
-    $data = drupal_json_decode($response->data);
-    variable_set('salesforce_identity', $data);
+    $data = backdrop_json_decode($response->data);
+    config_set('salesforce.settings', 'salesforce_identity', $data);
   }
 
   /**
@@ -386,10 +390,11 @@ class Salesforce {
    * @throws SalesforceException
    */
   public function getIdentity() {
-    $identity = variable_get('salesforce_identity', FALSE);
+    $config = config('salesforce.settings');
+    $identity = $config->get('salesforce_identity');
     if ($identity) {
       $id_url_scheme = parse_url($identity['id']);
-      $allowed_endpoint = variable_get('salesforce_endpoint', NULL);
+      $allowed_endpoint = $config->get('salesforce_endpoint');
       $allowed_endpoint_url_scheme = parse_url($allowed_endpoint);
       if ($id_url_scheme['host'] != $allowed_endpoint_url_scheme['host']) {
         throw new SalesforceException(t('Salesforce identity does not match salesforce endpoint: you need to re-authenticate.'));
@@ -403,13 +408,13 @@ class Salesforce {
    */
   public function getAuthorizationCode() {
     $url = $this->login_url . '/services/oauth2/authorize';
-    $query = array(
+    $query = [
       'redirect_uri' => $this->redirectUrl(),
       'response_type' => 'code',
       'client_id' => $this->consumer_key,
-    );
+    ];
 
-    drupal_goto($url, array('query' => $query));
+    backdrop_goto($url, ['query' => $query]);
   }
 
   /**
@@ -419,22 +424,22 @@ class Salesforce {
    *   Code from Salesforce.
    */
   public function requestToken($code) {
-    $data = drupal_http_build_query(array(
+    $data = backdrop_http_build_query([
       'code' => $code,
       'grant_type' => 'authorization_code',
       'client_id' => $this->consumer_key,
       'client_secret' => $this->consumer_secret,
       'redirect_uri' => $this->redirectUrl(),
-    ));
+    ]);
 
     $url = $this->login_url . '/services/oauth2/token';
-    $headers = array(
+    $headers = [
       // This is an undocumented requirement on SF's end.
       'Content-Type' => 'application/x-www-form-urlencoded',
-    );
+    ];
     $response = $this->httpRequest($url, $data, $headers, 'POST');
 
-    $data = drupal_json_decode($response->data);
+    $data = backdrop_json_decode($response->data);
 
     if ($response->code != 200) {
       $error = isset($data['error_description']) ? $data['error_description'] : $response->error;
@@ -443,7 +448,7 @@ class Salesforce {
 
     // Ensure all required attributes are returned. They can be omitted if the
     // OAUTH scope is inadequate.
-    $required = array('refresh_token', 'access_token', 'id', 'instance_url');
+    $required = ['refresh_token', 'access_token', 'id', 'instance_url'];
     foreach ($required as $key) {
       if (!isset($data[$key])) {
         return FALSE;
@@ -465,11 +470,11 @@ class Salesforce {
    *   Redirect URL.
    */
   protected function redirectUrl() {
-    return url('salesforce/oauth_callback', array(
+    return url('salesforce/oauth_callback', [
       'absolute' => TRUE,
-      'language' => (object)array('language' => FALSE),
+      'language' => (object) ['language' => FALSE],
       'https' => TRUE,
-    ));
+    ]);
   }
 
   /**
@@ -490,7 +495,7 @@ class Salesforce {
    *
    * @addtogroup salesforce_apicalls
    */
-  public function objects($conditions = array('updateable' => TRUE), $reset = FALSE) {
+  public function objects($conditions = ['updateable' => TRUE], $reset = FALSE) {
     $cache = cache_get('salesforce_objects');
     // Force the recreation of the cache when it is older than 5 minutes.
     if ($cache && REQUEST_TIME < ($cache->created + 300) && !$reset) {
@@ -527,7 +532,7 @@ class Salesforce {
    * @addtogroup salesforce_apicalls
    */
   public function query(SalesforceSelectQuery $query) {
-    drupal_alter('salesforce_query', $query);
+    backdrop_alter('salesforce_query', $query);
     // Casting $query as a string calls SalesforceSelectQuery::__toString().
     $result = $this->apiCall('query?q=' . (string) $query);
     return $result;
@@ -545,7 +550,7 @@ class Salesforce {
    * @addtogroup salesforce_apicalls
    */
   public function queryAll(SalesforceSelectQuery $query) {
-    drupal_alter('salesforce_query', $query);
+    backdrop_alter('salesforce_query', $query);
     // Casting $query as a string calls SalesforceSelectQuery::__toString().
     $result = $this->apiCall('queryAll?q=' . (string) $query);
     return $result;
@@ -567,7 +572,7 @@ class Salesforce {
    */
   public function objectDescribe($name, $reset = FALSE) {
     if (empty($name)) {
-      return array();
+      return [];
     }
     $cache = cache_get($name, 'cache_salesforce_object');
     // Force the recreation of the cache when it is older than 5 minutes.
@@ -579,11 +584,11 @@ class Salesforce {
       // Sort field properties, because salesforce API always provides them in a
       // random order. We sort them so that stored and exported data are
       // standardized and predictable.
-      $fields = array();
-      foreach($object['fields'] as $field) {
+      $fields = [];
+      foreach ($object['fields'] as $field) {
         ksort($field);
         if (!empty($field['picklistValues'])) {
-          foreach($field['picklistValues'] as &$picklist_value) {
+          foreach ($field['picklistValues'] as &$picklist_value) {
             ksort($picklist_value);
           }
         }
@@ -686,7 +691,7 @@ class Salesforce {
    * @addtogroup salesforce_apicalls
    */
   public function objectRead($name, $id) {
-    return $this->apiCall("sobjects/{$name}/{$id}", array(), 'GET');
+    return $this->apiCall("sobjects/{$name}/{$id}", [], 'GET');
   }
 
   /**
@@ -719,7 +724,7 @@ class Salesforce {
    * @addtogroup salesforce_apicalls
    */
   public function objectDelete($name, $id) {
-    $this->apiCall("sobjects/{$name}/{$id}", array(), 'DELETE');
+    $this->apiCall("sobjects/{$name}/{$id}", [], 'DELETE');
   }
 
   /**
@@ -732,6 +737,7 @@ class Salesforce {
    *   Start date to check for deleted objects (in ISO 8601 format).
    * @param string $endDate
    *   End date to check for deleted objects (in ISO 8601 format).
+   *
    * @return GetDeletedResult
    */
   public function getDeleted($type, $startDate, $endDate) {
@@ -762,11 +768,11 @@ class Salesforce {
    *   Object type name, E.g., Contact, Account.
    *
    * @param int $start
-   *   unix timestamp for older timeframe for updates. 
+   *   unix timestamp for older timeframe for updates.
    *   Defaults to "-29 days" if empty.
    *
    * @param int $end
-   *   unix timestamp for end of timeframe for updates. 
+   *   unix timestamp for end of timeframe for updates.
    *   Defaults to now if empty
    *
    * @return array
@@ -780,17 +786,17 @@ class Salesforce {
    *
    * @addtogroup salesforce_apicalls
    */
-  public function getUpdated($name, $start = null, $end = null) {
+  public function getUpdated($name, $start = NULL, $end = NULL) {
     if (empty($start)) {
       $start = strtotime('-29 days');
     }
     $start = urlencode(gmdate(DATE_ATOM, $start));
-  
+
     if (empty($end)) {
       $end = time();
     }
     $end = urlencode(gmdate(DATE_ATOM, $end));
-  
+
     return $this->apiCall("sobjects/{$name}/updated/?start=$start&end=$end");
   }
 
@@ -802,7 +808,7 @@ class Salesforce {
    * @param string $name
    *   Object type name, E.g., Contact, Account.
    *
-   * @param string $devname 
+   * @param string $devname
    *   RecordType DeveloperName, e.g. Donation, Membership, etc.
    *
    * @return string SFID
@@ -817,9 +823,9 @@ class Salesforce {
         : NULL;
     }
     $query = new SalesforceSelectQuery('RecordType');
-    $query->fields = array('Id', 'Name', 'DeveloperName', 'SobjectType');
+    $query->fields = ['Id', 'Name', 'DeveloperName', 'SobjectType'];
     $result = $this->query($query);
-    $record_types = array();
+    $record_types = [];
     foreach ($result['records'] as $rt) {
       $record_types[$rt['SobjectType']][$rt['DeveloperName']] = $rt;
     }
@@ -828,10 +834,9 @@ class Salesforce {
       ? $record_types[$name][$devname]['Id']
       : NULL;
   }
+
 }
 
-class SalesforceException extends Exception {
-}
+class SalesforceException extends Exception { }
 
-class SalesforcePullException extends SalesforceException {
-}
+class SalesforcePullException extends SalesforceException { }

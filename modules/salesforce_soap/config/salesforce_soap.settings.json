@@ -1,0 +1,5 @@
+{
+    "_config_name": "salesforce_soap.settings",
+    "salesforce_soap_batch_enable": true,
+    "salesforce_refresh_token": ""
+}

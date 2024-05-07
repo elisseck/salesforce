@@ -1,7 +1,9 @@
 name = Salesforce Pull
 description = Imports objects from Salesforce based on mappings defined in Salesforce Mapping.
 package = Salesforce
-core = 7.x
+backdrop = 1.x
+type = module
 
 dependencies[] = salesforce_mapping
+dependencies[] = libraries
 

@@ -8,7 +8,7 @@ function salesforce_mapping_requirements($phase) {
   $t = get_t();
   switch($phase) {
     case 'install':
-      drupal_set_message(t('At least one sync method (Push or Pull) must be <a href="/admin/modules">enabled</a> to configure Salesforce Mappings.'), 'status', FALSE);
+      backdrop_set_message(t('At least one sync method (Push or Pull) must be <a href="/admin/modules">enabled</a> to configure Salesforce Mappings.'), 'status', FALSE);
       break;
     case 'runtime':
       if (!module_exists('salesforce_pull') && !module_exists('salesforce_push')) {
@@ -380,15 +380,15 @@ function salesforce_mapping_update_7100(&$sandbox) {
     'not null' => TRUE,
     'default' => '',
   ), array(
-    'unique keys' => array(
-      'name_sf_type_drupal_type' => array(
-        'drupal_entity_type',
-        'drupal_bundle',
-        'salesforce_object_type',
-        'salesforce_record_type',
+      'unique keys' => array(
+        'name_sf_type_drupal_type' => array(
+          'drupal_entity_type',
+          'drupal_bundle',
+          'salesforce_object_type',
+          'salesforce_record_type',
+        ),
       ),
-    ),
-  )
+    )
   );
 }
 
@@ -409,7 +409,7 @@ function salesforce_mapping_update_7301(&$sandbox) {
   db_add_field('salesforce_mapping', 'salesforce_record_types_allowed', $schemas['salesforce_mapping']['fields']['salesforce_record_types_allowed']);
 
   // Need to do some aggressive cache clearing, in particular the schema cache.
-  drupal_get_schema('salesforce_mapping', TRUE);
+  backdrop_get_schema('salesforce_mapping', TRUE);
   entity_info_cache_clear();
 
   $mappings = salesforce_mapping_load_multiple();
@@ -581,7 +581,7 @@ function salesforce_mapping_update_7303(&$sandbox) {
     db_add_field('salesforce_mapping_object', 'last_sync_message', $last_sync_message_spec);
 
     // Need to do some aggressive cache clearing, particularly the schema cache.
-    drupal_get_schema('salesforce_mapping_object', TRUE);
+    backdrop_get_schema('salesforce_mapping_object', TRUE);
     entity_info_cache_clear();
     $count_query = db_select('salesforce_mapping_object', 'm')
       ->fields('m');

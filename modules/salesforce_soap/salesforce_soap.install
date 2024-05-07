@@ -38,3 +38,21 @@ function salesforce_soap_requirements($phase) {
 
   return $requirements;
 }
+
+/**
+ * Migrate salesforce_soap variables to config.
+ */
+function salesforce_soap_update_1000() {
+  $config = config('salesforce_soap.settings');
+  $config->set('salesforce_soap_batch_enable', update_variable_get('salesforce_soap_batch_enable', TRUE));
+  $config->save();
+
+  update_variable_del('salesforce_soap_batch_enable');
+}
+
+/**
+ * Implements hook_install().
+ */
+function salesforce_soap_install() {
+  // Dynamically generated variable data was detected.
+}

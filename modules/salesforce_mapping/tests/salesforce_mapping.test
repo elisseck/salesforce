@@ -8,9 +8,9 @@
 module_load_include('test', 'salesforce', 'tests/salesforce');
 
 /**
- * Sets up basic tools for the testing of mapping Drupal to Salesforce.
+ * Sets up basic tools for the testing of mapping Backdrop to Salesforce.
  */
-abstract class SalesforceMappingTestCase extends DrupalWebTestCase {
+abstract class SalesforceMappingTestCase extends BackdropWebTestCase {
 
   protected $adminPath = 'admin/structure/salesforce/mappings';
   protected $addMapPath = 'admin/structure/salesforce/mappings/add';
@@ -32,8 +32,8 @@ abstract class SalesforceMappingTestCase extends DrupalWebTestCase {
       'administer salesforce mapping',
       'view salesforce mapping object',
     ));
-    $this->admin_user = $this->drupalCreateUser($permissions);
-    $this->drupalLogin($this->admin_user);
+    $this->admin_user = $this->backdropCreateUser($permissions);
+    $this->backdropLogin($this->admin_user);
   }
 
   /**
@@ -60,8 +60,8 @@ abstract class SalesforceMappingTestCase extends DrupalWebTestCase {
     // Give a default configuration if one is not provided for us.
     if (empty($config)) {
       $config = array(
-        'drupal_entity_type' => 'user',
-        'drupal_bundle' => 'user',
+        'backdrop_entity_type' => 'user',
+        'backdrop_bundle' => 'user',
         'salesforce_object_type' => 'Contact',
         'key' => 1,
         'mapping' => array(
@@ -69,7 +69,7 @@ abstract class SalesforceMappingTestCase extends DrupalWebTestCase {
             'fieldmap_type' => 'property',
             'fieldmap_value' => 'name',
             'salesforce_field' => 'Name',
-            'direction' => 'drupal_sf',
+            'direction' => 'backdrop_sf',
           ),
           array(
             'fieldmap_type' => 'property',
@@ -81,7 +81,7 @@ abstract class SalesforceMappingTestCase extends DrupalWebTestCase {
             'fieldmap_type' => 'property',
             'fieldmap_value' => 'name',
             'salesforce_field' => 'LastName',
-            'direction' => 'sf_drupal',
+            'direction' => 'sf_backdrop',
           ),
         ),
         'sync_triggers' => array(
@@ -97,24 +97,24 @@ abstract class SalesforceMappingTestCase extends DrupalWebTestCase {
     }
 
     $edit = array();
-    $machine_name = is_null($machine_name) ? str_replace(' ', '_', strtolower($label)) : $machine_name;
-    $this->drupalGet($this->addMapPath);
+    $machine_name = is_null($machine_name)?str_replace(' ', '_', strtolower($label)) : $machine_name;
+    $this->backdropGet($this->addMapPath);
     $this->assertNoText('You are not authorized to access this page.', 'Able to access the create map page.');
 
     // Get all of the AJAX behaviors out of the way.
-    $edit['drupal_entity_type'] = $config['drupal_entity_type'];
-    $this->drupalPostAjax(NULL, $edit, 'drupal_entity_type');
-    unset($config['drupal_entity_type']);
-    $edit['drupal_bundle'] = $config['drupal_bundle'];
-    $this->drupalPostAjax(NULL, $edit, 'drupal_bundle');
-    unset($config['drupal_bundle']);
+    $edit['backdrop_entity_type'] = $config['backdrop_entity_type'];
+    $this->backdropPostAjax(NULL, $edit, 'backdrop_entity_type');
+    unset($config['backdrop_entity_type']);
+    $edit['backdrop_bundle'] = $config['backdrop_bundle'];
+    $this->backdropPostAjax(NULL, $edit, 'backdrop_bundle');
+    unset($config['backdrop_bundle']);
     $edit['salesforce_object_type'] = $config['salesforce_object_type'];
-    $this->drupalPostAjax(NULL, $edit, 'salesforce_object_type');
+    $this->backdropPostAjax(NULL, $edit, 'salesforce_object_type');
     unset($config['salesforce_object_type']);
     foreach ($config['mapping'] as $delta => $map) {
-      $edit['salesforce_field_mappings[' . $delta . '][drupal_field][fieldmap_type]'] = $map['fieldmap_type'];
-      $this->drupalPostAjax(NULL, $edit, 'salesforce_field_mappings[' . $delta . '][drupal_field][fieldmap_type]');
-      $this->drupalPostAjax(NULL, $edit, array('salesforce_add_field' => 'Add another field mapping'));
+      $edit['salesforce_field_mappings[' . $delta . '][backdrop_field][fieldmap_type]'] = $map['fieldmap_type'];
+      $this->backdropPostAjax(NULL, $edit, 'salesforce_field_mappings[' . $delta . '][backdrop_field][fieldmap_type]');
+      $this->backdropPostAjax(NULL, $edit, array('salesforce_add_field' => 'Add another field mapping'));
       unset($config['mapping'][$delta]['fieldmap_type']);
     }
 
@@ -127,7 +127,7 @@ abstract class SalesforceMappingTestCase extends DrupalWebTestCase {
           foreach ($data as $delta => $fields) {
             foreach ($fields as $field => $value) {
               if ($field == 'fieldmap_value') {
-                $edit['salesforce_field_mappings[' . $delta . '][drupal_field][fieldmap_value]'] = $value;
+                $edit['salesforce_field_mappings[' . $delta . '][backdrop_field][fieldmap_value]'] = $value;
               }
               else {
                 $edit['salesforce_field_mappings[' . $delta . '][' . $field . ']'] = $value;
@@ -148,12 +148,12 @@ abstract class SalesforceMappingTestCase extends DrupalWebTestCase {
     }
 
     // Submit form unsuccessfully.
-    $this->drupalPost(NULL, $edit, 'Save mapping');
+    $this->backdropPost(NULL, $edit, 'Save mapping');
     $this->assertText('Salesforce field Email is not configured as an external id.', 'Invalid key not allowed');
     unset($edit['key']);
 
     // Submit form.
-    $this->drupalPost(NULL, $edit, 'Save mapping');
+    $this->backdropPost(NULL, $edit, 'Save mapping');
     $this->assertText('Salesforce field mapping saved.', 'Form posted as expected.');
     $this->assertRaw('id="salesforce-mapping-overview-form"', 'Redirected to the mappings overview table.');
     $this->assertRaw('(Machine name: ' . $machine_name . ')', 'New map successfully appears on overview page.');
@@ -163,13 +163,13 @@ abstract class SalesforceMappingTestCase extends DrupalWebTestCase {
   /**
    * Execute an Ajax submission.
    *
-   * This is unfortunately a modification of the original drupalPostAjax because
+   * This is unfortunately a modification of the original backdropPostAjax because
    * it did not have support for cases where ajax commands were set manually.  I
    * have added support for when a wrapper is declared as a single id.
    *
    * @param string $path
    *   Location of the form containing the Ajax enabled element to test. Can be
-   *   either a Drupal path or an absolute path or NULL to use the current page.
+   *   either a Backdrop path or an absolute path or NULL to use the current page.
    * @param array $edit
    *   Field data in an associative array. Changes the current input fields
    *   (where possible) to the values indicated.
@@ -186,11 +186,11 @@ abstract class SalesforceMappingTestCase extends DrupalWebTestCase {
    *   (optional) Options to be forwarded to url().
    * @param array $headers
    *   (optional) An array containing additional HTTP request headers, each
-   *   formatted as "name: value". Forwarded to drupalPost().
+   *   formatted as "name: value". Forwarded to backdropPost().
    * @param string $form_html_id
    *   (optional) HTML ID of the form to be submitted, use when there is more
    *   than one identical form on the same page and the value of the triggering
-   *   element is not enough to identify the form. Note this is not the Drupal
+   *   element is not enough to identify the form. Note this is not the Backdrop
    *   ID of the form but rather the HTML ID of the form.
    * @param array $ajax_settings
    *   (optional) An array of Ajax settings which if specified will be used in
@@ -199,14 +199,14 @@ abstract class SalesforceMappingTestCase extends DrupalWebTestCase {
    * @return array
    *   An array of Ajax commands.
    */
-  protected function drupalPostAJAX($path, $edit, $triggering_element, $ajax_path = NULL, array $options = array(), array $headers = array(), $form_html_id = NULL, $ajax_settings = NULL) {
-    // Get the content of the initial page prior to calling drupalPost(), since
-    // drupalPost() replaces $this->content.
+  protected function backdropPostAJAX($path, $edit, $triggering_element, $ajax_path = NULL, array $options = array(), array $headers = array(), $form_html_id = NULL, $ajax_settings = NULL) {
+    // Get the content of the initial page prior to calling backdropPost(), since
+    // backdropPost() replaces $this->content.
     if (isset($path)) {
-      $this->drupalGet($path, $options);
+      $this->backdropGet($path, $options);
     }
     $content = $this->content;
-    $drupal_settings = $this->drupalSettings;
+    $backdrop_settings = $this->backdropSettings;
 
     // Get the Ajax settings bound to the triggering element.
     if (!isset($ajax_settings)) {
@@ -221,7 +221,7 @@ abstract class SalesforceMappingTestCase extends DrupalWebTestCase {
       }
       $element = $this->xpath($xpath);
       $element_id = (string) $element[0]['id'];
-      $ajax_settings = $drupal_settings['ajax'][$element_id];
+      $ajax_settings = $backdrop_settings['ajax'][$element_id];
     }
 
     // Add extra information to the POST data as ajax.js does.
@@ -235,13 +235,13 @@ abstract class SalesforceMappingTestCase extends DrupalWebTestCase {
       $id = (string) $element['id'];
       $extra_post .= '&' . urlencode('ajax_html_ids[]') . '=' . urlencode($id);
     }
-    if (isset($drupal_settings['ajaxPageState'])) {
-      $extra_post .= '&' . urlencode('ajax_page_state[theme]') . '=' . urlencode($drupal_settings['ajaxPageState']['theme']);
-      $extra_post .= '&' . urlencode('ajax_page_state[theme_token]') . '=' . urlencode($drupal_settings['ajaxPageState']['theme_token']);
-      foreach ($drupal_settings['ajaxPageState']['css'] as $key => $value) {
+    if (isset($backdrop_settings['ajaxPageState'])) {
+      $extra_post .= '&' . urlencode('ajax_page_state[theme]') . '=' . urlencode($backdrop_settings['ajaxPageState']['theme']);
+      $extra_post .= '&' . urlencode('ajax_page_state[theme_token]') . '=' . urlencode($backdrop_settings['ajaxPageState']['theme_token']);
+      foreach ($backdrop_settings['ajaxPageState']['css'] as $key => $value) {
         $extra_post .= '&' . urlencode("ajax_page_state[css][$key]") . '=1';
       }
-      foreach ($drupal_settings['ajaxPageState']['js'] as $key => $value) {
+      foreach ($backdrop_settings['ajaxPageState']['js'] as $key => $value) {
         $extra_post .= '&' . urlencode("ajax_page_state[js][$key]") . '=1';
       }
     }
@@ -253,7 +253,7 @@ abstract class SalesforceMappingTestCase extends DrupalWebTestCase {
     }
 
     // Submit the POST request.
-    $return = drupal_json_decode($this->drupalPost(NULL, $edit, array('path' => $ajax_path, 'triggering_element' => $triggering_element), $options, $headers, $form_html_id, $extra_post));
+    $return = backdrop_json_decode($this->backdropPost(NULL, $edit, array('path' => $ajax_path, 'triggering_element' => $triggering_element), $options, $headers, $form_html_id, $extra_post));
 
     // Change the page content by applying the returned commands.
     if (!empty($ajax_settings) && !empty($return)) {
@@ -271,7 +271,7 @@ abstract class SalesforceMappingTestCase extends DrupalWebTestCase {
       foreach ($return as $command) {
         switch ($command['command']) {
           case 'settings':
-            $drupal_settings = drupal_array_merge_deep($drupal_settings, $command['settings']);
+            $backdrop_settings = backdrop_array_merge_deep($backdrop_settings, $command['settings']);
             break;
 
           case 'insert':
@@ -282,8 +282,8 @@ abstract class SalesforceMappingTestCase extends DrupalWebTestCase {
               $wrapper_node = $xpath->query('//*[@id="' . $ajax_settings['wrapper'] . '"]')->item(0);
             }
             // @todo Ajax commands can target any jQuery selector, but these are
-            //   hard to fully emulate with XPath. For now, just handle 'head'
-            //   and 'body', since these are used by ajax_render().
+//   hard to fully emulate with XPath. For now, just handle 'head'
+//   and 'body', since these are used by ajax_render().
             elseif (in_array($command['selector'], array('head', 'body'))) {
               $wrapper_node = $xpath->query('//' . $command['selector'])->item(0);
             }
@@ -339,8 +339,8 @@ abstract class SalesforceMappingTestCase extends DrupalWebTestCase {
       }
       $content = $dom->saveHTML();
     }
-    $this->drupalSetContent($content);
-    $this->drupalSetSettings($drupal_settings);
+    $this->backdropSetContent($content);
+    $this->backdropSetSettings($backdrop_settings);
     return $return;
   }
 

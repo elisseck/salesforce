@@ -1,10 +1,9 @@
 name = Salesforce SOAP
 description = SOAP API client to access methods not available to the REST API.
 package = Salesforce
-core = 7.x
+backdrop = 1.x
+type = module
 php = 5.3
-
-files[] = salesforce_soap.inc
 
 dependencies[] = salesforce
 dependencies[] = libraries

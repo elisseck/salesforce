@@ -31,7 +31,8 @@ function salesforce_pull_menu() {
  * Access callback for Salesforce webhooks.
  */
 function salesforce_pull_webhook_access() {
-  if (variable_get('salesforce_pull_webhook_enable') && isset($_GET['key']) && $_GET['key'] === variable_get('salesforce_pull_webhook_key')) {
+  $config = config('salesforce_pull.settings');
+  if ($config->get('salesforce_pull_webhook_enable') && isset($_GET['key']) && $_GET['key'] === $config->get('salesforce_pull_webhook_key')) {
     return user_access('access content');
   }
 
@@ -52,7 +53,7 @@ function salesforce_pull_webhook() {
     $info = $queues[SALESFORCE_PULL_QUEUE];
     $callback = $info['worker callback'];
     $end = time() + (isset($info['time']) ? $info['time'] : 15);
-    $queue = DrupalQueue::get(SALESFORCE_PULL_QUEUE);
+    $queue = BackdropQueue::get(SALESFORCE_PULL_QUEUE);
     while (time() < $end && ($item = $queue->claimItem())) {
       try {
         call_user_func($callback, $item->data);
@@ -70,7 +71,7 @@ function salesforce_pull_webhook() {
   }
 
   http_response_code($code);
-  drupal_exit();
+  backdrop_exit();
 }
 
 /**
@@ -84,13 +85,14 @@ function salesforce_pull_cron() {
  * Callback for the standard pull process used by webhooks and cron.
  */
 function salesforce_pull() {
+  $config = config('salesforce_pull.settings');
   $sfapi = salesforce_get_api();
   if ($sfapi->isAuthorized() && salesforce_pull_check_throttle()) {
     salesforce_pull_get_updated_records();
     salesforce_pull_get_deleted_records();
 
     // Store this request time for the throttle check.
-    variable_set('salesforce_pull_last_sync', REQUEST_TIME);
+    $config->get('salesforce_pull_last_sync');
 
     return TRUE;
   }
@@ -125,65 +127,6 @@ function salesforce_pull_queue_info() {
   return $queues;
 }
 
-/**
- * Implements hook_form_FORM_ID_alter().
- */
-function salesforce_pull_form_salesforce_settings_form_alter(&$form, &$form_state, $form_id) {
-  $form['salesforce_pull_throttle'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Pull throttle (seconds)'),
-    '#description' => t('Number of seconds to wait between repeated salesforce pulls.<br>
-      Prevents the webserver from becoming overloaded in case of too many cron runs, or webhook usage.'),
-    '#default_value' => variable_get('salesforce_pull_throttle', 5),
-    '#element_validate' => array('element_validate_number'),
-  );
-
-  $webhooks_enabled = variable_get('salesforce_pull_webhook_enable', FALSE);
-  $form['salesforce_pull_webhook_enable'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Enable webhooks'),
-    '#description' => t('Allow external applications to trigger Salesforce sync with a web request.'),
-    '#default_value' => $webhooks_enabled,
-  );
-
-  $webhook_key = variable_get('salesforce_pull_webhook_key', drupal_random_key());
-  $url = url('salesforce/webhook/pull', array(
-    'query' => array('key' => $webhook_key),
-    'absolute' => TRUE
-  ));
-
-  $form['salesforce_pull_webhook_key'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Webhook key'),
-    '#description' => t('A secret key that is required in the webhook request url (@url).<br>
-      Leave blank to auto-generate a new random key.', array('@url' => $url)),
-    '#default_value' => $webhook_key,
-    '#states' => array(
-      // Only show this field when the 'webhook_enable' checkbox is enabled.
-      'visible' => array(
-        ':input[name="salesforce_pull_webhook_enable"]' => array('checked' => TRUE),
-      ),
-    ),
-    '#element_validate' => array('salesforce_pull_webhook_key_validate'),
-  );
-  module_load_include('inc', 'salesforce_mapping', 'includes/salesforce_mapping.admin');
-  $form[SALESFORCE_MERGE_RECORD] = array(
-    '#type' => 'select',
-    '#title' => t('Salesforce Contact Merge Object'),
-    '#options' => _salesforce_mapping_get_salesforce_object_type_options($form_state),
-    '#default_value' => variable_get(SALESFORCE_MERGE_RECORD, NULL),
-    '#weight' => 4,
-    '#description' => t(
-      'Select a Salesforce object that describes merged Salesforce Contacts to automate merging. Not seeing an object? !settings_link',
-      array(
-        '!settings_link' => l(t(
-          'Check your Salesforce object filters settings.'),
-          'admin/config/salesforce/settings',
-          array('fragment' => 'sf_object_filters_anchor')),
-      )
-    ),
-  );
-}
 
 /**
  * Element validation callback for the webhook key.
@@ -191,7 +134,7 @@ function salesforce_pull_form_salesforce_settings_form_alter(&$form, &$form_stat
 function salesforce_pull_webhook_key_validate($element, &$form_state, $form) {
   // If there is no key set, generate a default key.
   if (empty($element['#value'])) {
-    form_set_value($form['salesforce_pull_webhook_key'], drupal_random_key(), $form_state);
+    form_set_value($form['salesforce_pull_webhook_key'], backdrop_random_key(), $form_state);
   }
 }
 
@@ -204,8 +147,9 @@ function salesforce_pull_webhook_key_validate($element, &$form_state, $form) {
  *    Returns false if the time elapsed between recent pulls is too short.
  */
 function salesforce_pull_check_throttle() {
-  $pull_throttle = variable_get('salesforce_pull_throttle', 5);
-  $last_sync = variable_get('salesforce_pull_last_sync', 0);
+  $config = config('salesforce_pull.settings');
+  $pull_throttle = $config->get('salesforce_pull_throttle');
+  $last_sync = $config->get('salesforce_pull_last_sync');
 
   if (REQUEST_TIME > $last_sync + $pull_throttle) {
     return TRUE;
@@ -221,14 +165,15 @@ function salesforce_pull_check_throttle() {
  * and places each updated SF object into the queue for later processing.
  */
 function salesforce_pull_get_updated_records() {
-  $queue = DrupalQueue::get(SALESFORCE_PULL_QUEUE);
+  $config = config('salesforce_pull.settings');
+  $queue = BackdropQueue::get(SALESFORCE_PULL_QUEUE);
 
   // Avoid overloading the processing queue and pass this time around if it's
   // over a configurable limit.
-  if ($queue->numberOfItems() > variable_get('salesforce_pull_max_queue_size', 100000)) {
+  if ($queue->numberOfItems() > $config->get('salesforce_pull_max_queue_size')) {
     watchdog('salesforce_pull', 'Salesforce Pull aborted pulling updated records due to queue size being > %limit. Current queue size is %current',
       array(
-        '%limit' => variable_get('salesforce_pull_max_queue_size', 100000),
+        '%limit' => $config->get('salesforce_pull_max_queue_size'),
         '%current' => $queue->numberOfItems(),
       ),
       WATCHDOG_WARNING
@@ -272,7 +217,7 @@ function salesforce_pull_get_updated_records() {
           str_replace($version_path, '', $new_result['nextRecordsUrl']) : FALSE;
       }
 
-      variable_set('salesforce_pull_last_sync_' . $type, REQUEST_TIME);
+      config_set('salesforce_pull.settings','salesforce_pull_last_sync_' . $type, REQUEST_TIME);
     }
     else {
       watchdog('Salesforce Pull', $results['errorCode'] . ':' . $results['message'], array(), WATCHDOG_ERROR);
@@ -294,6 +239,7 @@ function salesforce_pull_get_updated_records() {
  * @see SalesforceMapping::getMappedRecordTypes
  */
 function salesforce_pull_get_pull_query($type) {
+  $config = config('salesforce_pull.settings');
   $mapped_fields = array();
   $mapped_record_types = array();
 
@@ -331,7 +277,7 @@ function salesforce_pull_get_pull_query($type) {
   ));
 
   // If no lastupdate, get all records, else get records since last pull.
-  $sf_last_sync = variable_get('salesforce_pull_last_sync_' . $type, NULL);
+  $sf_last_sync = $config->get('salesforce_pull_last_sync_' . $type);
   if ($sf_last_sync) {
     $last_sync = gmdate('Y-m-d\TH:i:s\Z', $sf_last_sync);
     $soql->addCondition($mapping->pull_trigger_date, $last_sync, '>');
@@ -382,11 +328,12 @@ function salesforce_pull_process_updated_records($sf_object) {
         }
       }
       // Allow other modules to define or alter the mapping object.
-      drupal_alter('salesforce_pull_mapping_object', $mapping_object, $sf_object, $sf_mapping);
+      backdrop_alter('salesforce_pull_mapping_object', $mapping_object, $sf_object, $sf_mapping);
       $exists = $mapping_object ? TRUE : FALSE;
       if ($exists && ($sf_mapping->sync_triggers & SALESFORCE_MAPPING_SYNC_SF_UPDATE)) {
         try {
-          $entity = entity_load_single($mapping_object->entity_type, $mapping_object->entity_id);
+          $entity = entity_load($mapping_object->entity_type, $mapping_object->entity_id);
+          $entity = reset($entity);
           if ($entity === FALSE) {
             $exists = FALSE;
             $message = t('Unable to update %type entity %label from Salesforce object %sfobjectid. Entity does not exist. Mapping removed, continuing with Create instead Update.',
@@ -397,7 +344,7 @@ function salesforce_pull_process_updated_records($sf_object) {
               ));
             watchdog('Salesforce Pull', $message, array(), WATCHDOG_NOTICE);
             salesforce_set_message($message, 'status', FALSE);
-            entity_delete('salesforce_mapping_object', $mapping_object->salesforce_mapping_object_id);
+            entity_delete_multiple('salesforce_mapping_object', array($mapping_object->salesforce_mapping_object_id));
           }
           else {
             // Flag this entity as having been processed. This does not persist,
@@ -478,7 +425,7 @@ function salesforce_pull_process_updated_records($sf_object) {
             // Because creating term via entities actually needs vid and won't be
             // fixed in Entity API (https://www.drupal.org/node/1409256).
             if (isset($values['vocabulary_machine_name'])) {
-              $vocabulary = taxonomy_vocabulary_machine_name_load($values['vocabulary_machine_name']);
+              $vocabulary = taxonomy_vocabulary_load($values['vocabulary_machine_name']);
               $values['vid'] = $vocabulary->vid;
             }
           }
@@ -581,6 +528,7 @@ function salesforce_pull_process_updated_records($sf_object) {
  * Get deleted records from salesforce.
  */
 function salesforce_pull_get_deleted_records() {
+  $config = config('salesforce_pull.settings');
   // Calculate which client to use. We default to the REST client but also
   // support SOAP if enabled. Note that deletions can only be queried via REST
   // with an API version >= 29.0.
@@ -588,22 +536,26 @@ function salesforce_pull_get_deleted_records() {
   $client = $sfapi;
   $use_soap = FALSE;
   if (class_exists('SalesforceSoapPartner')) {
-    $client = new SalesforceSoapPartner($sfapi, variable_get('salesforce_partner_wsdl', libraries_get_path('salesforce') . '/soapclient/partner.wsdl.xml'));
+    $service = $config->get('salesforce_partner_wsdl');
+    if (empty($service) || !isset($service)){
+      $service= libraries_get_path('salesforce') . '/soapclient/partner.wsdl.xml';
+    }
+    $client = new SalesforceSoapPartner($sfapi, $service);
     $use_soap = TRUE;
   }
 
   // Before we delete any records, we must check for merged records.
-  $merge_record_type = variable_get(SALESFORCE_MERGE_RECORD, FALSE);
+  $merge_record_type = $config->get(SALESFORCE_MERGE_RECORD);
   if (!empty($merge_record_type)) {
     $merged_results = salesforce_pull_check_merged_records($merge_record_type);
   }
 
   // Load all unique SF record types that we have mappings for.
   foreach (array_reverse(salesforce_mapping_get_mapped_objects()) as $type) {
-    $last_delete_sync = variable_get('salesforce_pull_delete_last_' . $type, REQUEST_TIME);
-    variable_set('salesforce_pull_delete_last_' . $type, REQUEST_TIME);
+    $last_delete_sync = $config->get('salesforce_pull_delete_last_' . $type);
+    config_set('salesforce_pull.settings','salesforce_pull_delete_last_' . $type, REQUEST_TIME);
     $version_path = parse_url($sfapi->getApiEndPoint(), PHP_URL_PATH);
-    $queue = DrupalQueue::get(SALESFORCE_PULL_QUEUE);
+    $queue = BackdropQueue::get(SALESFORCE_PULL_QUEUE);
     $now = time();
 
     // getDeleted() constraint: startDate cannot be more than 30 days ago
@@ -641,7 +593,7 @@ function salesforce_pull_get_deleted_records() {
       );
 
       if (!empty($merge_record_type)) {
-        drupal_alter('salesforce_pull_entity_merge_fields', $merge_fields);
+        backdrop_alter('salesforce_pull_entity_merge_fields', $merge_fields);
         foreach ($results->deletedRecords as $result) {
           foreach ($merged_results['records'] as $merged_result) {
             if ($result->id == $merged_result[$merge_fields['old_contact_key']]) {
@@ -691,7 +643,8 @@ function salesforce_pull_get_deleted_records() {
           str_replace($version_path, '', $new_result->nextRecordsUrl) : FALSE;
       }
 
-      variable_set('salesforce_pull_last_sync_' . $type, REQUEST_TIME);
+      config_set('salesforce_pull.settings','salesforce_pull_last_sync_' . $type, REQUEST_TIME);
+
     }
 
   }
@@ -707,7 +660,7 @@ function salesforce_pull_process_merged_records($sf_object) {
     'merged_contact_key' => 'Contact__c',
   );
 
-  drupal_alter('salesforce_pull_entity_merge_fields', $merge_fields);
+  backdrop_alter('salesforce_pull_entity_merge_fields', $merge_fields);
 
   $entity_to_delete = salesforce_mapping_object_load_by_sfid($sf_object[$merge_fields['old_contact_key']]);
   $merged_entity = salesforce_mapping_object_load_by_sfid($sf_object[$merge_fields['merged_contact_key']]);
@@ -745,20 +698,15 @@ function salesforce_pull_process_deleted_records($sf_object) {
 
   // Load and wrap the Drupal entity linked to the SF object.
   if ($mapping_object) {
-    $deleted_entity = entity_load_single($mapping_object->entity_type, $mapping_object->entity_id);
+    $deleted_entity = entity_load($mapping_object->entity_type, $mapping_object->entity_id);
+    $deleted_entity = reset($deleted_entity);
 
     // Check if entity exists before processing delete.
     if ($deleted_entity) {
       $wrapper = entity_metadata_wrapper($mapping_object->entity_type, $deleted_entity);
 
       // Load the mapping that manages these mapped objects.
-      $sf_mapping = reset(salesforce_mapping_load_multiple(
-        array(
-          'salesforce_object_type' => $sf_object['type'],
-          'drupal_entity_type' => $wrapper->type(),
-          'drupal_bundle' => $wrapper->getBundle(),
-        )
-      ));
+      $sf_mapping = reset(salesforce_mapping_load_multiple(array('salesforce_object_type' => $sf_object['type'],'drupal_entity_type' => $wrapper->type(), 'drupal_bundle' => $wrapper->getBundle(),)));
 
       // Only delete the mapped Drupal entity if the
       // SALESFORCE_MAPPING_SYNC_SF_DELETE flag is set.
@@ -799,6 +747,7 @@ function salesforce_pull_process_deleted_records($sf_object) {
  *   The Salesforce record type containing the merge history.
  */
 function salesforce_pull_check_merged_records($merge_record_type) {
+  $config = config('salesforce_pull.settings');
   $sfapi = salesforce_get_api();
 
   $merge_fields = array(
@@ -808,13 +757,13 @@ function salesforce_pull_check_merged_records($merge_record_type) {
     'modified_date' => 'LastModifiedDate',
   );
 
-  drupal_alter('salesforce_pull_entity_merge_fields', $merge_fields);
+  backdrop_alter('salesforce_pull_entity_merge_fields', $merge_fields);
   $objInfo = $sfapi->objects(array('name' => $merge_fields['type']));
   if (empty($objInfo)) {
     return array('records' => array());
   }
 
-  $last_delete_sync = variable_get('salesforce_pull_delete_last_' . $merge_fields['type'], REQUEST_TIME);
+  $last_delete_sync = $config->get('salesforce_pull_delete_last_' . $merge_fields['type']);
 
   $soql = new SalesforceSelectQuery($merge_fields['type']);
 
@@ -827,7 +776,7 @@ function salesforce_pull_check_merged_records($merge_record_type) {
   );
 
   // If no lastupdate, get all records, else get records since last pull.
-  $sf_last_sync = variable_get('salesforce_pull_last_sync_' . $merge_fields['type'], NULL);
+  $sf_last_sync = $config->get('salesforce_pull_last_sync_' . $merge_fields['type']);
   if ($sf_last_sync) {
     $last_sync = gmdate('Y-m-d\TH:i:s\Z', $sf_last_sync);
     $soql->addCondition($last_delete_sync, $last_sync, '>');
@@ -903,7 +852,7 @@ function salesforce_pull_map_fields($field_maps, &$entity_wrapper, $sf_object) {
     $value = call_user_func($fieldmap_type['pull_value_callback'], $parent, $sf_object, $field_map);
 
     // Allow this value to be altered before assigning to the entity.
-    drupal_alter('salesforce_pull_entity_value', $value, $field_map, $sf_object);
+    backdrop_alter('salesforce_pull_entity_value', $value, $field_map, $sf_object);
 
     try {
       if ($parent instanceof EntityListWrapper) {
@@ -944,4 +893,83 @@ function salesforce_pull_map_fields($field_maps, &$entity_wrapper, $sf_object) {
       throw new Exception($message, $e->getCode(), $e);
     }
   }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function salesforce_pull_form_salesforce_settings_form_alter(&$form, &$form_state, $form_id) {
+  $config = config('salesforce_pull.settings');
+  $salesforce_pull_throttle = $config->get('salesforce_pull_throttle');
+  $salesforce_pull_webhook_enable = $config->get('salesforce_pull_webhook_enable');
+  $salesforce_pull_webhook_key = $config->get('salesforce_pull_webhook_key');
+  $salesforce_contact_merge_record = $config->get('salesforce_contact_merge_record');
+
+  $form['salesforce_pull_throttle'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Pull throttle (seconds)'),
+    '#description' => t('Number of seconds to wait between repeated salesforce pulls.<br>
+      Prevents the webserver from becoming overloaded in case of too many cron runs, or webhook usage.'),
+    '#default_value' => $salesforce_pull_throttle,
+  );
+
+  $webhooks_enabled = $config->get('salesforce_pull_webhook_enable');
+  $form['salesforce_pull_webhook_enable'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable webhooks'),
+    '#description' => t('Allow external applications to trigger Salesforce sync with a web request.'),
+    '#default_value' => $salesforce_pull_webhook_enable,
+  );
+
+  $webhook_key = $config->get('salesforce_pull_webhook_key');
+  $url = url('salesforce/webhook/pull', array(
+    'query' => array('key' => $salesforce_pull_webhook_key),
+    'absolute' => TRUE,
+  ));
+
+  $form['salesforce_pull_webhook_key'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Webhook key'),
+    '#description' => t('A secret key that is required in the webhook request url (@url).<br>
+      Leave blank to auto-generate a new random key.', array('@url' => $url)),
+    '#default_value' => $salesforce_pull_webhook_key,
+    '#states' => array(
+      // Only show this field when the 'webhook_enable' checkbox is enabled.
+      'visible' => array(
+        ':input[name="salesforce_pull_webhook_enable"]' => array('checked' => TRUE),
+      ),
+    ),
+    '#element_validate' => array('salesforce_pull_webhook_key_validate'),
+  );
+  module_load_include('inc', 'salesforce_mapping', 'includes/salesforce_mapping.admin');
+
+  $form[SALESFORCE_MERGE_RECORD] = array(
+    '#type' => 'select',
+    '#title' => t('Salesforce Contact Merge Object'),
+    '#options' => _salesforce_mapping_get_salesforce_object_type_options($form_state),
+    '#default_value' => $salesforce_contact_merge_record,
+    '#weight' => 4,
+    '#description' => t(
+      'Select a Salesforce object that describes merged Salesforce Contacts to automate merging. Not seeing an object? !settings_link',
+      array(
+        '!settings_link' => l(t(
+          'Check your Salesforce object filters settings.'),
+          'admin/config/salesforce/settings',
+          array('fragment' => 'sf_object_filters_anchor')),
+      )
+    ),
+  );
+  $form['#submit'][] = 'salesforce_pull_form_salesforce_settings_form_submit';
+}
+
+function salesforce_pull_form_salesforce_settings_form_submit($form, &$form_state) {
+
+  $salesforce_pull_throttle = $form_state['values']['salesforce_pull_throttle'];
+  $salesforce_pull_webhook_enable = $form_state['values']['salesforce_pull_webhook_enable'];
+  $salesforce_pull_webhook_key = $form_state['values']['salesforce_pull_webhook_key'];
+  $salesforce_contact_merge_record = $form_state['values']['salesforce_contact_merge_record'];
+  config_set('salesforce_pull.settings', 'salesforce_pull_throttle', $salesforce_pull_throttle);
+  config_set('salesforce_pull.settings', 'salesforce_pull_webhook_enable', $salesforce_pull_webhook_enable);
+  config_set('salesforce_pull.settings', 'salesforce_pull_webhook_key', $salesforce_pull_webhook_key);
+  config_set('salesforce_pull.settings', 'salesforce_contact_merge_record', $salesforce_contact_merge_record);
 }

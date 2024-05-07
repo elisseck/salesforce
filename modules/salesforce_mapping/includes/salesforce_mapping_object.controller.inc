@@ -8,7 +8,7 @@
 /**
  * Salesforce Mapping UI controller.
  */
-class SalesforceMappingObjectController extends EntityAPIController {
+class SalesforceMappingObjectController extends EntityPlusController {
 
   /**
    * Override to include revision history and select properties.
@@ -79,5 +79,15 @@ class SalesforceMappingObjectController extends EntityAPIController {
     );
 
     return $build;
+  }
+  function salesforce_mapping_autoload_info() {
+    return array(
+      'SalesforceMapping' => 'includes/salesforce_mapping.entity.inc',
+      'SalesforceMappingUIController' => 'includes/salesforce_mapping.ui_controller.inc',
+      'SalesforceMappingObjectController' => 'includes/salesforce_mapping_object.controller.inc',
+      'SalesforceMappingObject' => 'includes/salesforce_mapping_object.entity.inc',
+      'SalesforceMappingObjectMetadataController' => 'includes/salesforce_mapping_object.metadata.inc',
+      'EntityAPIControllerExportable' =>'includes/salesforce_mapping.entity.controller.inc',
+    );
   }
 }

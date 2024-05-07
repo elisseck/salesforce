@@ -66,7 +66,7 @@ function salesforce_mappings_access() {
  */
 function salesforce_mapping_page_alter(&$page) {
   if (current_path() == 'admin/structure/salesforce' && !module_exists('salesforce_pull') && !module_exists('salesforce_push')) {
-    drupal_set_message(t('At least one sync method (Push or Pull) must be <a href="/admin/modules">enabled</a> to configure Salesforce Mappings.'), 'error', FALSE);
+    backdrop_set_message(t('At least one sync method (Push or Pull) must be <a href="/admin/modules">enabled</a> to configure Salesforce Mappings.'), 'error', FALSE);
   }
 }
 
@@ -101,7 +101,7 @@ function salesforce_mapping_entity_info() {
       'admin ui' => array(
         'path' => 'admin/structure/salesforce/mappings',
         'file' => 'salesforce_mapping.admin.inc',
-        'file path' => drupal_get_path('module', 'salesforce_mapping') . '/includes',
+        'file path' => backdrop_get_path('module', 'salesforce_mapping') . '/includes',
         'controller class' => 'SalesforceMappingUIController',
       ),
       'access callback' => 'salesforce_mappings_access',
@@ -170,7 +170,7 @@ function salesforce_mapping_menu() {
   // Define SF activity local tasks for all mapped entities.
   $defaults = array(
     'file' => 'salesforce_mapping_object.admin.inc',
-    'file path' => drupal_get_path('module', 'salesforce_mapping') . '/includes',
+    'file path' => backdrop_get_path('module', 'salesforce_mapping') . '/includes',
   );
 
   $mappings = salesforce_mapping_load();
@@ -182,7 +182,7 @@ function salesforce_mapping_menu() {
   }
 
   $manual_uris = array();
-  drupal_alter('salesforce_mapping_entity_uris', $manual_uris);
+  backdrop_alter('salesforce_mapping_entity_uris', $manual_uris);
   foreach ($mapped_entities as $type => $bundle) {
     $uri = array();
     if (isset($manual_uris[$type])) {
@@ -225,15 +225,15 @@ function salesforce_mapping_menu() {
       'weight' => -10,
     );
     $items[$path . '/edit'] = array(
-      'page callback' => 'salesforce_mapping_object_edit',
-      'page arguments' => array($entity_arg, $type),
-      'access arguments' => array('edit salesforce mapping object'),
-      'title' => 'Edit',
-      'type' => MENU_LOCAL_TASK,
-      'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
-    ) + $defaults;
+        'page callback' => 'salesforce_mapping_object_edit',
+        'page arguments' => array($entity_arg, $type),
+        'access arguments' => array('edit salesforce mapping object'),
+        'title' => 'Edit',
+        'type' => MENU_LOCAL_TASK,
+        'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+      ) + $defaults;
     $items[$path . '/delete'] = array(
-      'page callback' => 'drupal_get_form',
+      'page callback' => 'backdrop_get_form',
       'page arguments' => array('salesforce_mapping_object_delete_form', $entity_arg, $type),
       'access arguments' => array('delete salesforce mapping object'),
       'title' => 'Delete',
@@ -243,7 +243,7 @@ function salesforce_mapping_menu() {
   }
   // Provide a default Delete location, in case a mapping gets orphaned.
   $items['admin/content/salesforce/%/delete'] = array(
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array(
       'salesforce_mapping_universal_object_delete_form',
       3,
@@ -398,7 +398,7 @@ function salesforce_mapping_object_view($entity, $type, $view_mode = 'full') {
 function salesforce_mapping_object_edit($entity, $type) {
   $entity_wrapper = entity_metadata_wrapper($type, $entity);
   $sf_mapping_object = $entity_wrapper->salesforce_mapping_object->value();
-  return drupal_get_form('salesforce_mapping_object_form', $sf_mapping_object, $type, $entity_wrapper->getIdentifier());
+  return backdrop_get_form('salesforce_mapping_object_form', $sf_mapping_object, $type, $entity_wrapper->getIdentifier());
 }
 
 /**
@@ -448,11 +448,12 @@ function salesforce_mapping_object_delete_form($form, &$form_state, Entity $enti
 function salesforce_mapping_universal_object_delete_form($form, &$form_state, $sfid) {
   $sf_mapping_object = salesforce_mapping_object_load_by_sfid($sfid);
   if (!$sf_mapping_object) {
-    drupal_set_message(t('No mapping found for SF ID %sfid', array('%sfid' => $sfid)), 'warning');
+    backdrop_set_message(t('No mapping found for SF ID %sfid', array('%sfid' => $sfid)), 'warning');
     return $form;
   }
   $type = $sf_mapping_object->entity_type;
-  $entity = entity_load_single($sf_mapping_object->entity_type, $sf_mapping_object->entity_id);
+  $entity = entity_load($sf_mapping_object->entity_type, $sf_mapping_object->entity_id);
+  $entity =  reset($entity);
   if ($entity) {
     $entity_wrapper = entity_metadata_wrapper($type, $entity);
   }
@@ -484,15 +485,10 @@ function salesforce_mapping_universal_object_delete_form($form, &$form_state, $s
  */
 function salesforce_mapping_object_delete_form_submit($form, &$form_state) {
   $sfm_object = $form_state['salesforce_mapping_object'];
-$result = entity_delete('salesforce_mapping_object', $sfm_object->salesforce_mapping_object_id);
-  if ($result === FALSE) {
-    drupal_set_message(t('Object could not be deleted.'), 'error');
-  }
-  else {
-    drupal_set_message(t('Link has been deleted.'));
+   entity_delete_multiple('salesforce_mapping_object', array($sfm_object->salesforce_mapping_object_id));
+    backdrop_set_message(t('Link has been deleted.'));
     watchdog('salesforce', 'Deleted object link', array(), WATCHDOG_NOTICE);
     $form_state['redirect'] = 'admin/content/salesforce';
-  }
 }
 
 /**
@@ -713,7 +709,7 @@ function salesforce_mapping_get_fieldmap_types($fieldmap_type = NULL) {
   // Use the advanced drupal_static() pattern, since this is called very often.
   static $drupal_static_fast;
   if (!isset($drupal_static_fast)) {
-    $drupal_static_fast['salesforce_mapping_fieldmap_type'] = & drupal_static(__FUNCTION__);
+    $drupal_static_fast['salesforce_mapping_fieldmap_type'] = & backdrop_static(__FUNCTION__);
   }
   $salesforce_mapping_fieldmap_type = & $drupal_static_fast['salesforce_mapping_fieldmap_type'];
 
@@ -725,7 +721,7 @@ function salesforce_mapping_get_fieldmap_types($fieldmap_type = NULL) {
       $salesforce_mapping_fieldmap_type = module_invoke_all('salesforce_mapping_fieldmap_type');
 
       // Let other modules alter the fieldmap type.
-      drupal_alter('salesforce_mapping_fieldmap_type', $salesforce_mapping_fieldmap_type);
+      backdrop_alter('salesforce_mapping_fieldmap_type', $salesforce_mapping_fieldmap_type);
       cache_set('salesforce_mapping_fieldmap_type', $salesforce_mapping_fieldmap_type);
     }
   }
@@ -756,7 +752,8 @@ function salesforce_mapping_object_property_salesforce_url_get(SalesforceMapping
  * Callback to get $salesforce_mapping_object->entity.
  */
 function salesforce_mapping_object_property_entity_get(SalesforceMappingObject $salesforce_mapping_object, array $options, $property_name, $entity_type) {
-  $entity = entity_load_single($salesforce_mapping_object->entity_type, $salesforce_mapping_object->entity_id);
+  $entity = entity_load($salesforce_mapping_object->entity_type, $salesforce_mapping_object->entity_id);
+  $entity =  reset($entity);
   if ($entity) {
     return entity_metadata_wrapper($salesforce_mapping_object->entity_type, $entity);
   }
@@ -953,11 +950,14 @@ function salesforce_mapping_object_render_property($mapping, $name, $property) {
   return $content;
 }
 
-
 /**
  * Implements hook_form_FORM_ID_alter().
  */
 function salesforce_mapping_form_salesforce_settings_form_alter(&$form, &$form_state, $form_id) {
+  $config = config('salesforce_mapping.settings');
+  $salesforce_limit_to_triggerable = $config->get('salesforce_limit_to_triggerable');
+  $salesforce_limit_to_updateable = $config->get('salesforce_limit_to_updateable');
+
   $form['sf_object_filters'] = array(
     '#type' => 'fieldset',
     '#title' => t('Salesforce object filters'),
@@ -965,20 +965,45 @@ function salesforce_mapping_form_salesforce_settings_form_alter(&$form, &$form_s
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
     '#description' => t('Allows you to limit which objects show up in the "Salesforce object" dropdown on the Salesforce mapping form.'),
-    '#prefix' => l('', '', array('attributes' => array('name' => 'sf_object_filters_anchor'), 'external' => TRUE,)),
+    '#prefix' => l('', '', array('attributes' => array('name' => 'sf_object_filters_anchor'), 'external' => TRUE)),
   );
 
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['sf_object_filters']['salesforce_limit_to_triggerable'] = array(
     '#type' => 'checkbox',
     '#title' => t('Only show triggerable Salesforce objects'),
     '#description' => t('When pulling in a list of Salesforce objects to map, only show ones with the property "triggerable"'),
-    '#default_value' => variable_get('salesforce_limit_to_triggerable', TRUE),
+    '#default_value' =>  $salesforce_limit_to_triggerable,
   );
 
+  // TODO This variable was probably removed in Backdrop without replacement.
   $form['sf_object_filters']['salesforce_limit_to_updateable'] = array(
     '#type' => 'checkbox',
     '#title' => t('Only show updateable Salesforce objects'),
     '#description' => t('When pulling in a list of Salesforce objects to map, only show ones with the property "updateable"'),
-    '#default_value' => variable_get('salesforce_limit_to_updateable', TRUE),
+    '#default_value' =>  $salesforce_limit_to_updateable,
+  );
+  $form['#submit'][] = 'salesforce_mapping_form_salesforce_settings_form_submit';
+}
+
+function salesforce_mapping_form_salesforce_settings_form_submit($form, &$form_state) {
+  $salesforce_limit_to_triggerable = $form_state['values']['salesforce_limit_to_triggerable'];
+  $salesforce_limit_to_updateable = $form_state['values']['salesforce_limit_to_updateable'];
+  config_set('salesforce_mapping.settings', 'salesforce_limit_to_triggerable', $salesforce_limit_to_triggerable);
+  config_set('salesforce_mapping.settings', 'salesforce_limit_to_updateable', $salesforce_limit_to_updateable);
+}
+
+
+/**
+ * Implements hook_autoload_info().
+ */
+function salesforce_mapping_autoload_info() {
+  return array(
+    'SalesforceMapping' => 'includes/salesforce_mapping.entity.inc',
+    'SalesforceMappingUIController' => 'includes/salesforce_mapping.ui_controller.inc',
+    'SalesforceMappingObjectController' => 'includes/salesforce_mapping_object.controller.inc',
+    'SalesforceMappingObject' => 'includes/salesforce_mapping_object.entity.inc',
+    'SalesforceMappingObjectMetadataController' => 'includes/salesforce_mapping_object.metadata.inc',
+    'EntityAPIControllerExportable' =>'includes/salesforce_mapping.entity.controller.inc',
   );
 }

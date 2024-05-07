@@ -60,7 +60,7 @@ class SalesforceSelectQuery {
    * @return string
    *   SOQL query ready to be executed the SF API.
    */
-   // @codingStandardsIgnoreStart
+  // @codingStandardsIgnoreStart
   public function __toString() {
 
     $query = 'SELECT+';
@@ -91,7 +91,7 @@ class SalesforceSelectQuery {
     if ($this->offset) {
       $query .= "+OFFSET+" . (int) $this->offset;
     }
-    
+
     // Replaces spaces with + signs for custom filters.
     $query = str_replace(" ", "+", $query);
 

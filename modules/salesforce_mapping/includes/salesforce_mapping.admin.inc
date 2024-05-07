@@ -179,7 +179,7 @@ function salesforce_mapping_form($form, &$form_state, SalesforceMapping $mapping
   );
   $form['#attached'] = array(
     'js' => array(
-      drupal_get_path('module', 'salesforce_mapping') . '/includes/salesforce_mapping_admin.js',
+      backdrop_get_path('module', 'salesforce_mapping') . '/includes/salesforce_mapping_admin.js',
     )
   );
 
@@ -212,6 +212,7 @@ function salesforce_mapping_form($form, &$form_state, SalesforceMapping $mapping
     );
 
     $drupal_type_options = _salesforce_mapping_get_drupal_type_options();
+
     $sf_fields = _salesforce_mapping_get_salesforce_field_options($salesforce_object_type, $form_state);
     $has_token_type = FALSE;
     $field_mappings = _salesforce_mapping_get_default_value('field_mappings', $form_state);
@@ -480,13 +481,13 @@ function theme_salesforce_mapping_form_table_row($variables) {
   $row = !empty($elements['#row']) ? $elements['#row'] : array();
   $attributes = !empty($row['#attributes']) ? $row['#attributes'] : array();
 
-  $output = '<tr' . drupal_attributes($attributes) . '>';
+  $output = '<tr' . backdrop_attributes($attributes) . '>';
 
   $data = array();
   foreach ($columns as $column) {
     if (isset($row[$column])) {
       $cell = array(
-        'data' => drupal_render($row[$column]),
+        'data' => backdrop_render($row[$column]),
       );
       if (isset($row[$column]['#attributes'])) {
         foreach ($row[$column]['#attributes'] as $key => $value) {
@@ -497,13 +498,16 @@ function theme_salesforce_mapping_form_table_row($variables) {
     }
   }
   $output .= "</tr>";
-  return $output;  
+
+  return $output;
+
 }
 
 /**
  * Themes the field associations on a fieldmap edit form into a table.
  */
 function theme_salesforce_fieldmap_form_table($variables) {
+
   $elements = $variables['elements'];
 
   // Build the rows array.
@@ -515,7 +519,7 @@ function theme_salesforce_fieldmap_form_table($variables) {
     $row_columns = empty($columns) ? element_children($child) : $columns;
     foreach ($row_columns as $column) {
       if (isset($child[$column])) {
-        $cell = array('data' => drupal_render($child[$column]));
+        $cell = array('data' => backdrop_render($child[$column]));
         if (isset($child[$column]['#attributes'])) {
           foreach ($child[$column]['#attributes'] as $key => $value) {
             $cell[$key] = ($key == 'id') ? (is_array($value) ? array($value[0] . '-cell') : $value . '-cell') : $value;
@@ -603,7 +607,7 @@ function salesforce_mapping_form_validate($form, &$form_state) {
   if (isset($values['salesforce_field_mappings'])) {
     // Validate field mappings.
     $info = entity_get_info($values['drupal_entity_type']);
-    $properties = entity_get_all_property_info($values['drupal_entity_type']);
+    $properties = entity_plus_get_all_property_info($values['drupal_entity_type']);
     $sfobject = _salesforce_mapping_get_salesforce_object($values['salesforce_object_type'], $form_state);
     $sf_fields = isset($sfobject['fields']) ? $sfobject['fields'] : array();
     $key_delta = isset($values['key']) ? $values['key'] : FALSE;
@@ -689,7 +693,7 @@ function salesforce_mapping_form_submit($form, &$form_state) {
           'drupal_field' => $mapping['drupal_field'],
           'salesforce_field' => $sf_field,
           'key' => $key_delta !== FALSE && $key_delta != ""
-          && ($key === (int) $key_delta),
+            && ($key === (int) $key_delta),
           'direction' => $mapping['direction'],
         );
         if ($key_delta !== FALSE && $key_delta != "" && ($key === (int) $key_delta)) {
@@ -734,7 +738,7 @@ function salesforce_mapping_form_submit($form, &$form_state) {
     $mapping->dedupe_key = $dedupe_key;
   }
 
-  $mapping->save();
+  entity_plus_save('salesforce_mapping', $mapping);
 
   salesforce_set_message(t('Salesforce field mapping saved.'));
   $form_state['redirect'] = 'admin/structure/salesforce/mappings';
@@ -889,7 +893,7 @@ function _salesforce_mapping_get_default_value($field, &$form_state, $delta = NU
         // Set default for direction, which cannot be NULL like the others.
         $keys = array_keys(_salesforce_mapping_get_direction_options());
         $value = end($keys);
-        // No break for this case, should carry onto the default case.
+      // No break for this case, should carry onto the default case.
       default:
         if (isset($form_state['input']['salesforce_field_mappings'][$delta][$field])) {
           $value = &$form_state['input']['salesforce_field_mappings'][$delta][$field];
@@ -920,12 +924,13 @@ function _salesforce_mapping_get_default_value($field, &$form_state, $delta = NU
  *   the value, formatted to be appropriate as a value for #options.
  */
 function _salesforce_mapping_get_drupal_entities(&$form_state, $include_select = TRUE) {
+
   if (isset($form_state['sfm_storage']['drupal_entity_property_info'])) {
     $property_info = $form_state['sfm_storage']['drupal_entity_property_info'];
   }
   else {
     module_load_include('inc', 'entity', 'entity.info');
-    $property_info = entity_get_property_info();
+    $property_info = entity_plus_get_property_info();
     $entity_info = entity_get_info();
     $property_info = array_merge_recursive($entity_info, $property_info);
     $form_state['sfm_storage']['drupal_entity_property_info'] = $property_info;
@@ -994,6 +999,7 @@ function _salesforce_mapping_get_entity_bundle_options($drupal_entity_type, $inc
  *   the value, formatted to be appropriate as a value for #options.
  */
 function _salesforce_mapping_get_salesforce_object_type_options(&$form_state, $include_select = TRUE) {
+  $config = config('salesforce_mapping.settings');
   if (isset($form_state['sfm_storage']['salesforce_object_type'])) {
     $sfobjects = $form_state['sfm_storage']['salesforce_object_type'];
   }
@@ -1002,10 +1008,10 @@ function _salesforce_mapping_get_salesforce_object_type_options(&$form_state, $i
 
     // Note that we're filtering SF object types to a reasonable subset.
     $sf_object_filter = array();
-    if (variable_get('salesforce_limit_to_updateable', TRUE)) {
+    if ($config->get('salesforce_limit_to_updateable')) {
       $sf_object_filter['updateable'] = TRUE;
     }
-    if (variable_get('salesforce_limit_to_triggerable', TRUE)) {
+    if ($config->get('salesforce_limit_to_triggerable')) {
       $sf_object_filter['triggerable'] = TRUE;
     }
 
@@ -1231,6 +1237,7 @@ function _salesforce_mapping_get_required_mapping_fields(&$form, &$form_state) {
   }
 
   // Return only the labels.
+
   return array_keys($fields);
 }
 
