@@ -6,4 +6,3 @@ type = module
 php = 5.3
 
 dependencies[] = salesforce
-dependencies[] = libraries

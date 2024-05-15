@@ -5,5 +5,4 @@ backdrop = 1.x
 type = module
 
 dependencies[] = salesforce_mapping
-dependencies[] = libraries
 
