@@ -109,7 +109,7 @@ Credits
 
 - Originally written for Drupal by [Steve McKenzie](http://drupal.org/user/45890).
 - Ported to Backdrop CMS by [Alejandro Madrigal](https://github.com/alemadlei).
-- Code review and maintainer [Alejandro Madrigal](https://github.com/alemadlei).
+- Code review and maintainer [Eli Lisseck](https://github.com/elisseck).
 - Supporting organization [Giant Rabbit](https://github.com/giant-rabbit)
 
 License
