@@ -42,8 +42,6 @@ class SalesforceMappingUIController extends EntityDefaultUIController {
 
     $rows = array();
     foreach ($entities as $entity) {
-//      print_r($entity);
-//      die;
       $id = entity_plus_id($this->entityType, $entity);
       $weight = isset($form_state['values']['table'][$id]['weight']) ? $form_state['values']['table'][$id]['weight'] : $entity->weight;
       $rows[$id]['#row'] = $this->overviewTableRow(NULL, $id, $entity);
