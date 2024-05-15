@@ -15,14 +15,13 @@ function salesforce_soap_requirements($phase) {
   $t = get_t();
 
   if ($phase == 'runtime' || $phase == 'update') {
-    $library = libraries_detect('salesforce');
-    $library_available = !empty($library['installed']);
+    $library = backdrop_get_path('module', 'salesforce') . '/toolkit-php/soapclient/partner.wsdl.xml';
+    $library_available = !empty($library);
   }
   else if ($phase == 'install') {
-    if (!function_exists('libraries_get_path')) {
-      module_load_include('module', 'libraries');
+    if (function_exists('backdrop_get_path')) {
+      $library_available = backdrop_get_path('module', 'salesforce') . '/toolkit-php/soapclient/partner.wsdl.xml';
     }
-    $library_available = libraries_get_path('salesforce');
   }
 
   if (!$library_available) {

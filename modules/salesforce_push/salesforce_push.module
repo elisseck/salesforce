@@ -433,7 +433,7 @@ function salesforce_push_cron() {
   // Use soap API to batch process records.
   $service = $config->get('salesforce_partner_wsdl');
   if (empty($service) || !isset($service)){
-    $service= libraries_get_path('salesforce') . '/soapclient/partner.wsdl.xml';
+    $service = backdrop_get_path('module', 'salesforce') . '/toolkit-php/soapclient/partner.wsdl.xml';
   }
   $soap = new SalesforceSoapPartner($sfapi, $service);
   if (!empty($delete_list)) {

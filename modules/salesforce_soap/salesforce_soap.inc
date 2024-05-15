@@ -26,7 +26,7 @@ class SalesforceSoapPartner extends SforcePartnerClient {
   public function __construct(Salesforce $sfapi, $wsdl = NULL) {
     parent::__construct();
     if (empty($wsdl)) {
-      $wsdl = libraries_get_path('salesforce') . '/soapclient/partner.wsdl.xml';
+      $wsdl = backdrop_get_path('module', 'salesforce') . '/toolkit-php/soapclient/partner.wsdl.xml';
     }
     $this->setConnected(FALSE);
     $this->createConnection($wsdl);

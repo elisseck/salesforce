@@ -9,18 +9,18 @@
  * Implements hook_init().
  */
 function salesforce_soap_init() {
-  libraries_load('salesforce');
+  backdrop_get_path('module', 'salesforce') . '/toolkit-php/soapclient/partner.wsdl.xml';
 }
 
 /**
- * Implements hook_libraries_info().
+ * Implements hook_library_info().
  */
-function salesforce_soap_libraries_info() {
+function salesforce_soap_library_info() {
   return array(
     'salesforce' => array(
       'name' => 'salesforce',
       'version callback' => 'salesforce_soap_libraries_version_callback',
-      'path' => 'soapclient',
+      'path' =>  backdrop_get_path('module', 'salesforce') . '/toolkit-php/soapclient/partner.wsdl.xml',
       'vendor url' => 'https://github.com/developerforce/Force.com-Toolkit-for-PHP/',
       'download url' => 'https://github.com/developerforce/Force.com-Toolkit-for-PHP/archive/master.zip',
       'files' => array(
@@ -35,7 +35,7 @@ function salesforce_soap_libraries_info() {
 /**
  * Dummy version callback for hook_libraries_info
  */
-function salesforce_soap_libraries_version_callback() {
+function salesforce_soap_library_version_callback() {
   return TRUE;
 }
 

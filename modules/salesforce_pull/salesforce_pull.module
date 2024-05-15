@@ -538,7 +538,7 @@ function salesforce_pull_get_deleted_records() {
   if (class_exists('SalesforceSoapPartner')) {
     $service = $config->get('salesforce_partner_wsdl');
     if (empty($service) || !isset($service)){
-      $service= libraries_get_path('salesforce') . '/soapclient/partner.wsdl.xml';
+      $service = backdrop_get_path('module', 'salesforce') . '/toolkit-php/soapclient/partner.wsdl.xml';
     }
     $client = new SalesforceSoapPartner($sfapi, $service);
     $use_soap = TRUE;
