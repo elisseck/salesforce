@@ -35,7 +35,7 @@ function salesforce_mapping_schema() {
 
   // Salesforce mapping table.
   $schema['salesforce_mapping'] = array(
-    'description' => 'Drupal to Salesforce mappings',
+    'description' => 'Backdrop to Salesforce mappings',
     'fields' => array(
       'salesforce_mapping_id' => array(
         'type' => 'serial',
@@ -89,15 +89,15 @@ function salesforce_mapping_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
-      'drupal_entity_type' => array(
-        'description' => 'The Drupal entity type for this mapping (e.g. "node", "user").',
+      'backdrop_entity_type' => array(
+        'description' => 'The Backdrop entity type for this mapping (e.g. "node", "user").',
         'type' => 'varchar',
         'length' => 128,
         'not null' => TRUE,
         'default' => '',
       ),
-      'drupal_bundle' => array(
-        'description' => 'The Drupal bundle for this mapping (e.g. "page", "user")',
+      'backdrop_bundle' => array(
+        'description' => 'The Backdrop bundle for this mapping (e.g. "page", "user")',
         'type' => 'varchar',
         'length' => 128,
         'not null' => TRUE,
@@ -172,9 +172,9 @@ function salesforce_mapping_schema() {
       'name' => array('name'),
     ),
     'indexes' => array(
-      'name_sf_type_drupal_type' => array(
-        'drupal_entity_type',
-        'drupal_bundle',
+      'name_sf_type_backdrop_type' => array(
+        'backdrop_entity_type',
+        'backdrop_bundle',
         'salesforce_object_type',
       ),
     ),
@@ -182,7 +182,7 @@ function salesforce_mapping_schema() {
 
   // Object mapping table.
   $schema['salesforce_mapping_object'] = array(
-    'description' => 'Drupal to Salesforce object mappings',
+    'description' => 'Backdrop to Salesforce object mappings',
     'fields' => array(
       'salesforce_mapping_object_id' => array(
         'type' => 'serial',
@@ -204,14 +204,14 @@ function salesforce_mapping_schema() {
         'default' => '',
       ),
       'entity_id' => array(
-        'description' => 'Drupal entity Id.',
+        'description' => 'Backdrop entity Id.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
       ),
       'entity_type' => array(
-        'description' => 'Drupal entity type.',
+        'description' => 'Backdrop entity type.',
         'type' => 'varchar',
         'length' => 128,
         'not null' => TRUE,
@@ -224,7 +224,7 @@ function salesforce_mapping_schema() {
         'default' => 0,
       ),
       'entity_updated' => array(
-        'description' => 'The Unix timestamp when the mapped Drupal entity was last updated.',
+        'description' => 'The Unix timestamp when the mapped Backdrop entity was last updated.',
         'type' => 'int',
         'not null' => FALSE,
         'default' => 0,
@@ -258,13 +258,13 @@ function salesforce_mapping_schema() {
     ),
     'primary key' => array('salesforce_mapping_object_id'),
     'indexes' => array(
-      'drupal_entity' => array('entity_type', 'entity_id'),
+      'backdrop_entity' => array('entity_type', 'entity_id'),
       'salesforce_object' => array('salesforce_id'),
       'salesforce_mapping_object_revision' => array('revision_id'),
     ),
     'unique keys' => array(
       'salesforce' => array('salesforce_id'),
-      'salesforce_drupal' => array('entity_type', 'entity_id'),
+      'salesforce_backdrop' => array('entity_type', 'entity_id'),
       'revision_id' => array('revision_id'),
     ),
     'foreign keys' => array(
@@ -299,14 +299,14 @@ function salesforce_mapping_schema() {
         'default' => '',
       ),
       'entity_id' => array(
-        'description' => 'Drupal entity Id.',
+        'description' => 'Backdrop entity Id.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
       ),
       'entity_type' => array(
-        'description' => 'Drupal entity type.',
+        'description' => 'Backdrop entity type.',
         'type' => 'varchar',
         'length' => 128,
         'not null' => TRUE,
@@ -319,7 +319,7 @@ function salesforce_mapping_schema() {
         'default' => 0,
       ),
       'entity_updated' => array(
-        'description' => 'The Unix timestamp when the mapped Drupal entity was last updated.',
+        'description' => 'The Unix timestamp when the mapped Backdrop entity was last updated.',
         'type' => 'int',
         'not null' => FALSE,
         'default' => 0,
@@ -353,7 +353,7 @@ function salesforce_mapping_schema() {
     ),
     'primary key' => array('revision_id'),
     'indexes' => array(
-      'drupal_entity' => array('entity_type', 'entity_id'),
+      'backdrop_entity' => array('entity_type', 'entity_id'),
       'salesforce_object' => array('salesforce_id'),
       'salesforce_mapping_object_id' => array('salesforce_mapping_object_id'),
     ),
@@ -372,7 +372,7 @@ function salesforce_mapping_schema() {
  * Increase length of salesforce_object_type database column to 255.
  */
 function salesforce_mapping_update_7100(&$sandbox) {
-  db_drop_unique_key('salesforce_mapping', 'name_sf_type_drupal_type');
+  db_drop_unique_key('salesforce_mapping', 'name_sf_type_backdrop_type');
   db_change_field('salesforce_mapping', 'salesforce_object_type', 'salesforce_object_type', array(
     'description' => 'The Salesforce object type for this mapping.',
     'type' => 'varchar',
@@ -381,9 +381,9 @@ function salesforce_mapping_update_7100(&$sandbox) {
     'default' => '',
   ), array(
       'unique keys' => array(
-        'name_sf_type_drupal_type' => array(
-          'drupal_entity_type',
-          'drupal_bundle',
+        'name_sf_type_backdrop_type' => array(
+          'backdrop_entity_type',
+          'backdrop_bundle',
           'salesforce_object_type',
           'salesforce_record_type',
         ),
@@ -400,7 +400,7 @@ function salesforce_mapping_update_7301(&$sandbox) {
 
   // Update Unique Keys to exclude salesforce_record_type:
   db_drop_unique_key('salesforce_mapping', 'name');
-  db_drop_unique_key('salesforce_mapping', 'name_sf_type_drupal_type');
+  db_drop_unique_key('salesforce_mapping', 'name_sf_type_backdrop_type');
   db_change_field('salesforce_mapping', 'salesforce_record_type', 'salesforce_record_type_default',
     $schemas['salesforce_mapping']['fields']['salesforce_record_type_default'],
     array('unique keys' => $schemas['salesforce_mapping']['unique keys']));
@@ -427,12 +427,12 @@ function salesforce_mapping_update_7301(&$sandbox) {
 function salesforce_mapping_update_7302(&$sandbox) {
 
   // Remove unique key.
-  db_drop_unique_key('salesforce_mapping', 'name_sf_type_drupal_type');
+  db_drop_unique_key('salesforce_mapping', 'name_sf_type_backdrop_type');
 
   // Add non-unique key back.
-  db_add_index('salesforce_mapping', 'name_sf_type_drupal_type', array(
-    'drupal_entity_type',
-    'drupal_bundle',
+  db_add_index('salesforce_mapping', 'name_sf_type_backdrop_type', array(
+    'backdrop_entity_type',
+    'backdrop_bundle',
     'salesforce_object_type',
   ));
 
@@ -467,14 +467,14 @@ function salesforce_mapping_update_7303(&$sandbox) {
           'default' => '',
         ),
         'entity_id' => array(
-          'description' => 'Drupal entity Id.',
+          'description' => 'Backdrop entity Id.',
           'type' => 'int',
           'unsigned' => TRUE,
           'not null' => TRUE,
           'default' => 0,
         ),
         'entity_type' => array(
-          'description' => 'Drupal entity type.',
+          'description' => 'Backdrop entity type.',
           'type' => 'varchar',
           'length' => 128,
           'not null' => TRUE,
@@ -487,7 +487,7 @@ function salesforce_mapping_update_7303(&$sandbox) {
           'default' => 0,
         ),
         'entity_updated' => array(
-          'description' => 'The Unix timestamp when the mapped Drupal entity was last updated.',
+          'description' => 'The Unix timestamp when the mapped Backdrop entity was last updated.',
           'type' => 'int',
           'not null' => FALSE,
           'default' => 0,
@@ -521,7 +521,7 @@ function salesforce_mapping_update_7303(&$sandbox) {
       ),
       'primary key' => array('revision_id'),
       'indexes' => array(
-        'drupal_entity' => array('entity_type', 'entity_id'),
+        'backdrop_entity' => array('entity_type', 'entity_id'),
         'salesforce_object' => array('salesforce_id'),
         'salesforce_mapping_object_id' => array('salesforce_mapping_object_id'),
       ),
@@ -642,7 +642,7 @@ function salesforce_mapping_update_7303(&$sandbox) {
  */
 function salesforce_mapping_update_7304(&$sandbox) {
   $entity_updated_field = array(
-    'description' => 'The Unix timestamp when the mapped Drupal entity was last updated.',
+    'description' => 'The Unix timestamp when the mapped Backdrop entity was last updated.',
     'type' => 'int',
     'not null' => FALSE,
     'default' => 0,

@@ -75,8 +75,8 @@ function salesforce_mapping_object_form_validate($form, &$form_state) {
   else {
     list($entity_id, , $bundle) = entity_extract_ids($entity_type, $entity);
     $mappings = salesforce_mapping_load_multiple(array(
-      'drupal_entity_type' => $entity_type,
-      'drupal_bundle' => $bundle,
+      'backdrop_entity_type' => $entity_type,
+      'backdrop_bundle' => $bundle,
     ));
 
     // Check that entity is of a mapped type/bundle.
@@ -88,12 +88,12 @@ function salesforce_mapping_object_form_validate($form, &$form_state) {
 
   // For new mappings, validate entity type/id.
   if (!empty($mapping_object->is_new) && $mapping_object->is_new) {
-    // Check for existing mapping based on the Drupal entity.
-    $mapping_object_drupal = salesforce_mapping_object_load_by_drupal($entity_type, $entity_id, TRUE);
+    // Check for existing mapping based on the Backdrop entity.
+    $mapping_object_backdrop = salesforce_mapping_object_load_by_backdrop($entity_type, $entity_id, TRUE);
 
-    if ($mapping_object_drupal &&
-      (empty($mapping_object->salesforce_mapping_object_id) || $mapping_object_drupal->salesforce_mapping_object_id != $mapping_object->salesforce_mapping_object_id)) {
-      form_set_error('entity_id', t('Drupal entity is already mapped to a Salesforce object.'));
+    if ($mapping_object_backdrop &&
+      (empty($mapping_object->salesforce_mapping_object_id) || $mapping_object_backdrop->salesforce_mapping_object_id != $mapping_object->salesforce_mapping_object_id)) {
+      form_set_error('entity_id', t('Backdrop entity is already mapped to a Salesforce object.'));
     }
   }
   $mapping = reset($mappings);
@@ -107,7 +107,7 @@ function salesforce_mapping_object_form_validate($form, &$form_state) {
 
   if ($mapping_object_sf &&
     (empty($mapping_object->salesforce_mapping_object_id) || $mapping_object_sf->salesforce_mapping_object_id != $mapping_object->salesforce_mapping_object_id)) {
-    form_set_error('salesforce_id', t('Salesforce object is already mapped to a Drupal entity.'));
+    form_set_error('salesforce_id', t('Salesforce object is already mapped to a Backdrop entity.'));
   }
 
   $sfapi = salesforce_get_api();
@@ -188,7 +188,7 @@ function salesforce_mapping_object_filter_form($form, &$form_state) {
 
   $form['search']['entity_id'] = array(
     '#type' => 'textfield',
-    '#title' => t('Drupal Entity Id'),
+    '#title' => t('Backdrop Entity Id'),
     '#size' => 19,
     '#default_value' => isset($values['entity_id']) ? $values['entity_id'] : '',
     '#states' => array(
@@ -495,7 +495,7 @@ function salesforce_mapping_object_table_form_submit($form, &$form_state) {
       // Set entity_updated to now to ensure push occurs.
       $mapping->entity_updated = REQUEST_TIME;
       $wrapper = entity_metadata_wrapper('salesforce_mapping_object', $mapping);
-      salesforce_push_entity_crud($mapping->entity_type, $wrapper->entity->value(), SALESFORCE_MAPPING_SYNC_DRUPAL_UPDATE);
+      salesforce_push_entity_crud($mapping->entity_type, $wrapper->entity->value(), SALESFORCE_MAPPING_SYNC_BACKDROP_UPDATE);
     }
   }
 }

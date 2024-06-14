@@ -64,12 +64,12 @@ class SalesforceMappingObjectMetadataController extends EntityDefaultMetadataCon
       'computed' => TRUE,
     );
 
-    // Drupal entity.
+    // Backdrop entity.
     $properties['entity'] = array(
       'label' => t("Entity"),
       'type' => 'entity',
       'schema field' => 'entity',
-      'description' => t("The Drupal entity."),
+      'description' => t("The Backdrop entity."),
       'getter callback' => 'salesforce_mapping_object_property_entity_get',
       'setter callback' => 'salesforce_mapping_object_property_entity_set',
     );

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Manages Salesforce object and Drupal entity mappings.
+ * Manages Salesforce object and Backdrop entity mappings.
  */
 
 module_load_include('inc', 'salesforce_mapping', 'includes/salesforce_mapping.fieldmap_type');
@@ -11,9 +11,9 @@ module_load_include('inc', 'salesforce_mapping', 'includes/salesforce_mapping.fi
  * Bit flags defining when a data sync should take place for a given mapping.
  */
 define('SALESFORCE_MAPPING_SYNC_OFF', 0x0000);
-define('SALESFORCE_MAPPING_SYNC_DRUPAL_CREATE', 0x0001);
-define('SALESFORCE_MAPPING_SYNC_DRUPAL_UPDATE', 0x0002);
-define('SALESFORCE_MAPPING_SYNC_DRUPAL_DELETE', 0x0004);
+define('SALESFORCE_MAPPING_SYNC_BACKDROP_CREATE', 0x0001);
+define('SALESFORCE_MAPPING_SYNC_BACKDROP_UPDATE', 0x0002);
+define('SALESFORCE_MAPPING_SYNC_BACKDROP_DELETE', 0x0004);
 define('SALESFORCE_MAPPING_SYNC_SF_CREATE', 0x0008);
 define('SALESFORCE_MAPPING_SYNC_SF_UPDATE', 0x0010);
 define('SALESFORCE_MAPPING_SYNC_SF_DELETE', 0x0020);
@@ -21,8 +21,8 @@ define('SALESFORCE_MAPPING_SYNC_SF_DELETE', 0x0020);
 /**
  * Field mapping direction constants.
  */
-define('SALESFORCE_MAPPING_DIRECTION_DRUPAL_SF', 'drupal_sf');
-define('SALESFORCE_MAPPING_DIRECTION_SF_DRUPAL', 'sf_drupal');
+define('SALESFORCE_MAPPING_DIRECTION_BACKDROP_SF', 'backdrop_sf');
+define('SALESFORCE_MAPPING_DIRECTION_SF_BACKDROP', 'sf_backdrop');
 define('SALESFORCE_MAPPING_DIRECTION_SYNC', 'sync');
 
 /**
@@ -178,7 +178,7 @@ function salesforce_mapping_menu() {
   foreach ($mappings as $mapping) {
     // We grab the bundle now because it becomes inaccessible for some entities
     // after it is put into the loop below:
-    $mapped_entities[$mapping->drupal_entity_type] = $mapping->drupal_bundle;
+    $mapped_entities[$mapping->backdrop_entity_type] = $mapping->backdrop_bundle;
   }
 
   $manual_uris = array();
@@ -505,7 +505,7 @@ function salesforce_mapping_object_load($salesforce_mapping_object_id, $conditio
 }
 
 /**
- * Returns Salesforce object mappings for a given Drupal entity.
+ * Returns Salesforce object mappings for a given Backdrop entity.
  *
  * @param string $entity_type
  *   Type of entity to load.
@@ -517,7 +517,7 @@ function salesforce_mapping_object_load($salesforce_mapping_object_id, $conditio
  * @return SalesforceMappingObject
  *   The requested SalesforceMappingObject or FALSE if none was found.
  */
-function salesforce_mapping_object_load_by_drupal($entity_type, $entity_id, $reset = FALSE) {
+function salesforce_mapping_object_load_by_backdrop($entity_type, $entity_id, $reset = FALSE) {
   $conditions = array(
     'entity_id' => $entity_id,
     'entity_type' => $entity_type,
@@ -546,7 +546,7 @@ function salesforce_mapping_object_load_by_sfid($salesforce_id, $reset = FALSE) 
 /**
  * Return a unique list of mapped Salesforce object types.
  *
- * @TODO: add parameter to limit by trigger: http://drupal.org/node/1915668
+ * @TODO: add parameter to limit by trigger: http://backdropcms.org/node/1915668
  */
 function salesforce_mapping_get_mapped_objects() {
   $object_types = array();
@@ -559,14 +559,14 @@ function salesforce_mapping_get_mapped_objects() {
 }
 
 /**
- * Return a unique list of mapped Drupal entity types and bundles.
+ * Return a unique list of mapped Backdrop entity types and bundles.
  */
 function salesforce_mapping_get_mapped_entities() {
   $entity_types = array();
   $mappings = salesforce_mapping_load();
   usort($mappings, 'salesforce_mapping_sort');
   foreach ($mappings as $mapping) {
-    $entity_types[$mapping->drupal_entity_type][$mapping->drupal_bundle] = TRUE;
+    $entity_types[$mapping->backdrop_entity_type][$mapping->backdrop_bundle] = TRUE;
   }
   return $entity_types;
 }
@@ -588,7 +588,7 @@ function salesforce_mapping_sort($mapping_a, $mapping_b) {
 function salesforce_mapping_entity_delete($entity, $type) {
   // Delete any Salesforce object mappings with this entity.
   list($entity_id, , $bundle) = entity_extract_ids($type, $entity);
-  $mapping_object = salesforce_mapping_object_load_by_drupal($type, $entity_id);
+  $mapping_object = salesforce_mapping_object_load_by_backdrop($type, $entity_id);
 
   // No mapping object for this entity, return.
   if (!$mapping_object) {
@@ -599,13 +599,13 @@ function salesforce_mapping_entity_delete($entity, $type) {
   // trigger in the mapping. We're avoiding the issue of deleting a mapping
   // object before deleting the mapped object.
   $mappings = salesforce_mapping_load_multiple(array(
-    'drupal_entity_type' => $type,
-    'drupal_bundle' => $bundle,
+    'backdrop_entity_type' => $type,
+    'backdrop_bundle' => $bundle,
   ));
 
   foreach ($mappings as $mapping) {
     // Look for any mapping with the delete trigger enabled.
-    if ($mapping->sync_triggers & SALESFORCE_MAPPING_SYNC_DRUPAL_DELETE) {
+    if ($mapping->sync_triggers & SALESFORCE_MAPPING_SYNC_BACKDROP_DELETE) {
       return;
     }
   }
@@ -676,14 +676,14 @@ function salesforce_mapping_entity_mapping_accessible($op, $entity, $type, $acco
 /**
  * Implements hook_entity_update().
  *
- * Ensures drupal entity has an update timestamp.
+ * Ensures backdrop entity has an update timestamp.
  */
 function salesforce_mapping_entity_update($entity, $type) {
   // Check if mapping exists.
-  $sf_mappings = salesforce_mapping_load_multiple(array('drupal_entity_type' => $type));
+  $sf_mappings = salesforce_mapping_load_multiple(array('backdrop_entity_type' => $type));
   if ($sf_mappings) {
     list($entity_id) = entity_extract_ids($type, $entity);
-    $sf_mapping_object = salesforce_mapping_object_load_by_drupal($type, $entity_id);
+    $sf_mapping_object = salesforce_mapping_object_load_by_backdrop($type, $entity_id);
     if ($sf_mapping_object) {
       // Update entity updated property.
       $sf_mapping_object->entity_updated = REQUEST_TIME;
@@ -706,12 +706,12 @@ function salesforce_mapping_entity_update($entity, $type) {
  *   NULL to return an array with info about all types.
  */
 function salesforce_mapping_get_fieldmap_types($fieldmap_type = NULL) {
-  // Use the advanced drupal_static() pattern, since this is called very often.
-  static $drupal_static_fast;
-  if (!isset($drupal_static_fast)) {
-    $drupal_static_fast['salesforce_mapping_fieldmap_type'] = & backdrop_static(__FUNCTION__);
+  // Use the advanced backdrop_static() pattern, since this is called very often.
+  static $backdrop_static_fast;
+  if (!isset($backdrop_static_fast)) {
+    $backdrop_static_fast['salesforce_mapping_fieldmap_type'] = & backdrop_static(__FUNCTION__);
   }
-  $salesforce_mapping_fieldmap_type = & $drupal_static_fast['salesforce_mapping_fieldmap_type'];
+  $salesforce_mapping_fieldmap_type = & $backdrop_static_fast['salesforce_mapping_fieldmap_type'];
 
   if (empty($salesforce_mapping_fieldmap_type)) {
     if ($cache = cache_get('salesforce_mapping_fieldmap_type')) {
@@ -773,7 +773,7 @@ function salesforce_mapping_object_property_entity_set(SalesforceMappingObject $
  * Callback to get the salesforce mapping object for an entity.
  */
 function salesforce_mapping_object_entity_property_get($entity, array $options, $property_name, $entity_type) {
-  $mapping_object = salesforce_mapping_object_load_by_drupal($entity_type, entity_id($entity_type, $entity));
+  $mapping_object = salesforce_mapping_object_load_by_backdrop($entity_type, entity_id($entity_type, $entity));
   if ($mapping_object) {
     return entity_metadata_wrapper('salesforce_mapping_object', $mapping_object);
   }
@@ -920,7 +920,7 @@ function salesforce_mapping_object_render_property($mapping, $name, $property) {
       break;
 
     case 'last_sync_action':
-      $content = drupal_ucfirst($property->value());
+      $content = backdrop_ucfirst($property->value());
       break;
 
     case 'entity':

@@ -1,5 +1,5 @@
 name = Salesforce Mapping
-description = Map Drupal entities to Salesforce objects.
+description = Map Backdrop entities to Salesforce objects.
 package = Salesforce
 backdrop = 1.x
 type = module

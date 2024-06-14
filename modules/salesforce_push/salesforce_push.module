@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Push updates to Salesforce when a Drupal entity is updated.
+ * Push updates to Salesforce when a Backdrop entity is updated.
  */
 
 define('SALESFORCE_PUSH_QUEUE', 'salesforce_push');
@@ -11,28 +11,28 @@ define('SALESFORCE_PUSH_QUEUE', 'salesforce_push');
  * Implements hook_entity_insert().
  */
 function salesforce_push_entity_insert($entity, $type) {
-  salesforce_push_entity_crud($type, $entity, SALESFORCE_MAPPING_SYNC_DRUPAL_CREATE);
+  salesforce_push_entity_crud($type, $entity, SALESFORCE_MAPPING_SYNC_BACKDROP_CREATE);
 }
 
 /**
  * Implements hook_entity_update().
  */
 function salesforce_push_entity_update($entity, $type) {
-  salesforce_push_entity_crud($type, $entity, SALESFORCE_MAPPING_SYNC_DRUPAL_UPDATE);
+  salesforce_push_entity_crud($type, $entity, SALESFORCE_MAPPING_SYNC_BACKDROP_UPDATE);
 }
 
 /**
  * Implements hook_entity_delete().
  */
 function salesforce_push_entity_delete($entity, $type) {
-  salesforce_push_entity_crud($type, $entity, SALESFORCE_MAPPING_SYNC_DRUPAL_DELETE);
+  salesforce_push_entity_crud($type, $entity, SALESFORCE_MAPPING_SYNC_BACKDROP_DELETE);
 }
 
 /**
  * Push entities to Salesforce.
  *
  * @param string $entity_type
- *   Type of Drupal entity.
+ *   Type of Backdrop entity.
  * @param object $entity
  *   The entity object.
  * @param int $sf_sync_trigger
@@ -48,8 +48,8 @@ function salesforce_push_entity_crud($entity_type, $entity, $sf_sync_trigger) {
   list($entity_id, , $bundle) = entity_extract_ids($entity_type, $entity);
 
   $mappings = salesforce_mapping_load_multiple(array(
-    'drupal_entity_type' => $entity_type,
-    'drupal_bundle' => $bundle,
+    'backdrop_entity_type' => $entity_type,
+    'backdrop_bundle' => $bundle,
   ));
 
   foreach ($mappings as $mapping) {
@@ -93,17 +93,17 @@ function salesforce_push_mapping_object_form_submit($form, &$form_state) {
   $entity_id = $values['entity_id'];
   $entity = entity_load($entity_type, $entity_id);
   $entity = reset($entity);
-  $trigger = SALESFORCE_MAPPING_SYNC_DRUPAL_UPDATE;
+  $trigger = SALESFORCE_MAPPING_SYNC_BACKDROP_UPDATE;
   salesforce_push_entity_crud($entity_type, $entity, $trigger);
   // @TODO we can do better than this:
-  // drupal_set_message('Push request submitted. If your mappings are set to push asynchronously, you need to run cron.');
+  // backdrop_set_message('Push request submitted. If your mappings are set to push asynchronously, you need to run cron.');
 }
 
 /**
- * Sync Drupal entities and Salesforce objects using the REST API.
+ * Sync Backdrop entities and Salesforce objects using the REST API.
  *
  * @param string $entity_type
- *   Type of Drupal entity.
+ *   Type of Backdrop entity.
  * @param object $entity
  *   The entity object.
  * @param object $mapping
@@ -122,7 +122,7 @@ function salesforce_push_sync_rest($entity_type, $entity, $mapping, $sf_sync_tri
   list($entity_id) = entity_extract_ids($entity_type, $entity);
   $entity_wrapper = entity_metadata_wrapper($entity_type, $entity);
 
-  $mapping_object = salesforce_mapping_object_load_by_drupal($entity_type, $entity_id, TRUE);
+  $mapping_object = salesforce_mapping_object_load_by_backdrop($entity_type, $entity_id, TRUE);
   // Allow other modules to define or alter the mapping object.
   backdrop_alter('salesforce_push_mapping_object', $mapping_object, $entity, $mapping);
 
@@ -135,7 +135,7 @@ function salesforce_push_sync_rest($entity_type, $entity, $mapping, $sf_sync_tri
 
   $op = '';
   // Delete SF object.
-  if ($sf_sync_trigger == SALESFORCE_MAPPING_SYNC_DRUPAL_DELETE) {
+  if ($sf_sync_trigger == SALESFORCE_MAPPING_SYNC_BACKDROP_DELETE) {
     if ($mapping_object) {
       $op = 'Delete';
       try {
@@ -371,11 +371,11 @@ function salesforce_push_cron() {
       continue;
     }
 
-    $mapping_object = salesforce_mapping_object_load_by_drupal($entity_type, $entity_id);
+    $mapping_object = salesforce_mapping_object_load_by_backdrop($entity_type, $entity_id);
     // Allow other modules to define or alter the mapping object.
     backdrop_alter('salesforce_push_mapping_object', $mapping_object, $entity, $mapping);
 
-    if ($item->data['trigger'] == SALESFORCE_MAPPING_SYNC_DRUPAL_DELETE && $mapping_object) {
+    if ($item->data['trigger'] == SALESFORCE_MAPPING_SYNC_BACKDROP_DELETE && $mapping_object) {
       $delete_list[$delta] = $mapping_object->salesforce_id;
       continue;
     }
@@ -539,7 +539,7 @@ function salesforce_push_process_soap_results($op, $results, $synced_entities) {
 }
 
 /**
- * Map Drupal values to a Salesforce object.
+ * Map Backdrop values to a Salesforce object.
  *
  * @param object $mapping
  *   Mapping object.
@@ -556,7 +556,7 @@ function salesforce_push_process_soap_results($op, $results, $synced_entities) {
 function salesforce_push_map_params($mapping, $entity_wrapper, $use_soap = FALSE, $is_new = TRUE) {
   foreach ($mapping->field_mappings as $fieldmap) {
     // Skip fields that aren't being pushed to Salesforce.
-    if (!in_array($fieldmap['direction'], array(SALESFORCE_MAPPING_DIRECTION_DRUPAL_SF, SALESFORCE_MAPPING_DIRECTION_SYNC))) {
+    if (!in_array($fieldmap['direction'], array(SALESFORCE_MAPPING_DIRECTION_BACKDROP_SF, SALESFORCE_MAPPING_DIRECTION_SYNC))) {
       continue;
     }
 
@@ -565,7 +565,7 @@ function salesforce_push_map_params($mapping, $entity_wrapper, $use_soap = FALSE
       continue;
     }
 
-    $fieldmap_type = salesforce_mapping_get_fieldmap_types($fieldmap['drupal_field']['fieldmap_type']);
+    $fieldmap_type = salesforce_mapping_get_fieldmap_types($fieldmap['backdrop_field']['fieldmap_type']);
 
     $value = call_user_func($fieldmap_type['push_value_callback'], $fieldmap, $entity_wrapper);
     $params[$fieldmap['salesforce_field']['name']] = $value;
@@ -594,6 +594,6 @@ function salesforce_push_action_info() {
  * Push entity to Salesforce.
  */
 function salesforce_push_action(&$entity, $context) {
-  $trigger = (!empty($entity->is_new) && $entity->is_new) ? SALESFORCE_MAPPING_SYNC_DRUPAL_CREATE : SALESFORCE_MAPPING_SYNC_DRUPAL_UPDATE;
+  $trigger = (!empty($entity->is_new) && $entity->is_new) ? SALESFORCE_MAPPING_SYNC_BACKDROP_CREATE : SALESFORCE_MAPPING_SYNC_BACKDROP_UPDATE;
   salesforce_push_entity_crud($context['entity_type'], $entity, $trigger);
 }

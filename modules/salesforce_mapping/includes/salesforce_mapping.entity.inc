@@ -60,8 +60,8 @@ class SalesforceMapping extends Entity {
    *   If given, only include fields mapped in this or these directions.
    *   Possible values are:
    *     SALESFORCE_MAPPING_DIRECTION_SYNC
-   *     SALESFORCE_MAPPING_DIRECTION_SF_DRUPAL
-   *     SALESFORCE_MAPPING_DIRECTION_DRUPAL_SF
+   *     SALESFORCE_MAPPING_DIRECTION_SF_BACKDROP
+   *     SALESFORCE_MAPPING_DIRECTION_BACKDROP_SF
    *   @see salesforce_mapping.module
    * @return array $mapped_fields
    *   Indexes and keys are both Salesforce Field (machine) Name

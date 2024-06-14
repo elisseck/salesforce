@@ -13,7 +13,7 @@ function salesforce_mapping_salesforce_mapping_fieldmap_type() {
     'property' => array(
       'label' => t('Properties'),
       'field_type' => 'select',
-      'description' => t('Select a Drupal field or property to map to a Salesforce field. Related are left out and should be handled using another fieldmap type like tokens.'),
+      'description' => t('Select a Backdrop field or property to map to a Salesforce field. Related are left out and should be handled using another fieldmap type like tokens.'),
       'options_callback' => 'salesforce_mapping_property_fieldmap_options',
       'push_value_callback' => 'salesforce_mapping_property_fieldmap_push_value',
       'pull_value_callback' => 'salesforce_mapping_property_fieldmap_pull_value',
@@ -56,7 +56,7 @@ function salesforce_mapping_salesforce_mapping_fieldmap_type() {
 }
 
 /**
- * Return all possible Drupal properties for a given entity type.
+ * Return all possible Backdrop properties for a given entity type.
  *
  * @param string $entity_type
  *   Name of entity whose properties to list.
@@ -108,7 +108,7 @@ function salesforce_mapping_property_fieldmap_options($entity_type, $entity_bund
 }
 
 /**
- * Return all possible Drupal properties of type entity for a given entity type.
+ * Return all possible Backdrop properties of type entity for a given entity type.
  *
  * @param string $entity_type
  *   The type of entity of whose related entities to find.
@@ -124,7 +124,7 @@ function salesforce_mapping_related_entity_fieldmap_options($entity_type, $entit
  * Value callback for related entity fieldmap type.
  *
  * @param array $fieldmap
- *   Map of Drupal field to Salesforce field associations.
+ *   Map of Backdrop field to Salesforce field associations.
  * @param object $entity_wrapper
  *   Entity wrapper object.
  *
@@ -133,15 +133,15 @@ function salesforce_mapping_related_entity_fieldmap_options($entity_type, $entit
  */
 function salesforce_mapping_related_entity_fieldmap_push_value($fieldmap, $entity_wrapper) {
   $value = NULL;
-  if (property_exists($entity_wrapper->{$fieldmap['drupal_field']['fieldmap_value']}, 'isEntityList')) {
-    $related_wrapper = $entity_wrapper->{$fieldmap['drupal_field']['fieldmap_value']}->get(0);
+  if (property_exists($entity_wrapper->{$fieldmap['backdrop_field']['fieldmap_value']}, 'isEntityList')) {
+    $related_wrapper = $entity_wrapper->{$fieldmap['backdrop_field']['fieldmap_value']}->get(0);
   }
   else {
-    $related_wrapper = $entity_wrapper->{$fieldmap['drupal_field']['fieldmap_value']};
+    $related_wrapper = $entity_wrapper->{$fieldmap['backdrop_field']['fieldmap_value']};
   }
   if ($related_entity = $related_wrapper->value()) {
     list($related_entity_id) = entity_extract_ids($related_wrapper->type(), $related_entity);
-    $mapping_object = salesforce_mapping_object_load_by_drupal(
+    $mapping_object = salesforce_mapping_object_load_by_backdrop(
       $related_wrapper->type(),
       $related_entity_id
     );
@@ -251,17 +251,17 @@ function salesforce_mapping_relation_endpoints_fieldmap_options($entity_type, $e
  * @param EntityMetadataWrapper $entity_wrapper
  *   Wrapper for the related entity being synced.
  * @param SalesforceMappingObject $sf_object
- *   Mapped Drupal and Salesforce objects.
+ *   Mapped Backdrop and Salesforce objects.
  * @param array $field_map
  *   Field mapping data.
  *
  * @return array
- *   Array of Drupal entities.
+ *   Array of Backdrop entities.
  */
 function salesforce_mapping_relation_endpoints_fieldmap_pull_value($entity_wrapper, $sf_object, $field_map) {
   $values = array();
 
-  // Load each related Drupal entity.
+  // Load each related Backdrop entity.
   foreach ($field_map['salesforce_field'] as $sf_field) {
     $mapping_object = salesforce_mapping_object_load_by_sfid($sf_object[$sf_field['name']]);
     if ($mapping_object) {
@@ -306,7 +306,7 @@ function salesforce_mapping_relation_endpoints_fieldmap_pull_value($entity_wrapp
  * Value callback for property fieldmap type.
  *
  * @param array $fieldmap
- *   Map of Drupal field to Salesforce field associations.
+ *   Map of Backdrop field to Salesforce field associations.
  * @param object $entity_wrapper
  *   Entity wrapper object.
  *
@@ -314,15 +314,15 @@ function salesforce_mapping_relation_endpoints_fieldmap_pull_value($entity_wrapp
  *   The push value.
  */
 function salesforce_mapping_property_fieldmap_push_value($fieldmap, $entity_wrapper) {
-  $drupal_fields_array = explode(':', $fieldmap['drupal_field']['fieldmap_value']);
+  $backdrop_fields_array = explode(':', $fieldmap['backdrop_field']['fieldmap_value']);
   $parent = $entity_wrapper;
-  foreach ($drupal_fields_array as $drupal_field) {
+  foreach ($backdrop_fields_array as $backdrop_field) {
     if ($parent instanceof EntityListWrapper) {
       // First list<> types, get the property from the first item.
-      $child_wrapper = $parent->get(0)->{$drupal_field};
+      $child_wrapper = $parent->get(0)->{$backdrop_field};
     }
     else {
-      $child_wrapper = $parent->{$drupal_field};
+      $child_wrapper = $parent->{$backdrop_field};
     }
     $parent = $child_wrapper;
   }
@@ -343,7 +343,7 @@ function salesforce_mapping_property_fieldmap_push_value($fieldmap, $entity_wrap
 
   // Field type specific handling.
   if ($child_wrapper->type() == 'date' && isset($value) && ($fieldmap['salesforce_field']['type'] == 'date' || $fieldmap['salesforce_field']['type'] == 'datetime')) {
-    // Drupal provides a timestamp, Salesforce wants ISO 8601 formatted
+    // Backdrop provides a timestamp, Salesforce wants ISO 8601 formatted
     // date/time.
     $value = format_date($value, 'custom', 'c');
   }
@@ -368,7 +368,7 @@ function salesforce_mapping_property_fieldmap_pull_value($entity_wrapper, $sf_ob
 
   if (isset($value)) {
     // Salesforce provides multipicklist values as a delimited string. If the
-    // destination field in Drupal accepts multiple values, explode the string
+    // destination field in Backdrop accepts multiple values, explode the string
     // into an array.
     if ($entity_wrapper instanceof EntityListWrapper) {
       $value = explode(SALESFORCE_MAPPING_ARRAY_DELIMITER, $value);
@@ -413,12 +413,12 @@ function salesforce_mapping_property_fieldmap_pull_value($entity_wrapper, $sf_ob
  *
  * @TODO: Add length validation.
  */
-function salesforce_mapping_property_validation($drupal_field, $sf_field, $direction, $key) {
+function salesforce_mapping_property_validation($backdrop_field, $sf_field, $direction, $key) {
   $valid = FALSE;
   $length_valid = TRUE;
 
   // Type validation
-  // direction[array Salesforce type][array Drupal type]
+  // direction[array Salesforce type][array Backdrop type]
   $verify_array = array(
     'sync' => array(
       'string' => array('text', 'list<text>', 'uri'),
@@ -427,7 +427,7 @@ function salesforce_mapping_property_validation($drupal_field, $sf_field, $direc
       'datetime' => array('date'),
       'email' => array('text'),
     ),
-    'drupal_sf' => array(
+    'backdrop_sf' => array(
       // Allow any source field for string type.
       'string' => array(),
       'int' => array('integer'),
@@ -435,7 +435,7 @@ function salesforce_mapping_property_validation($drupal_field, $sf_field, $direc
       'datetime' => array('date'),
       'email' => array('text'),
     ),
-    'sf_drupal' => array(
+    'sf_backdrop' => array(
       'string' => array('text', 'int', 'list<text>'),
       'int' => array('integer'),
       'id' => array('text'),
@@ -444,22 +444,22 @@ function salesforce_mapping_property_validation($drupal_field, $sf_field, $direc
     ),
   );
 
-  $drupal_type = isset($drupal_field['type']) ? $drupal_field['type'] : 'text';
+  $backdrop_type = isset($backdrop_field['type']) ? $backdrop_field['type'] : 'text';
   $sf_type_array = isset($verify_array[$direction][$sf_field['type']]) ? $verify_array[$direction][$sf_field['type']] : array();
   if (empty($sf_type_array)) {
     // If type is not found in validation array, assume valid.
     return TRUE;
   }
 
-  $type_valid = (array_search($drupal_type, $sf_type_array) === FALSE) ? FALSE : TRUE;
+  $type_valid = (array_search($backdrop_type, $sf_type_array) === FALSE) ? FALSE : TRUE;
   $valid = $type_valid && $length_valid;
   if (!$valid) {
     form_set_error(
       "salesforce_field_mappings][{$key}][salesforce_field",
-      t('Drupal field %drupal_label is of type %drupal_type, Salesforce field %sf_label is of type %sf_type and cannot be mapped in the %dir direction',
+      t('Backdrop field %backdrop_label is of type %backdrop_type, Salesforce field %sf_label is of type %sf_type and cannot be mapped in the %dir direction',
         array(
-          '%drupal_label' => $drupal_field['label'],
-          '%drupal_type' => $drupal_type,
+          '%backdrop_label' => $backdrop_field['label'],
+          '%backdrop_type' => $backdrop_type,
           '%sf_label' => $sf_field['label'],
           '%sf_type' => $sf_field['type'],
           '%dir' => $direction,
@@ -468,12 +468,12 @@ function salesforce_mapping_property_validation($drupal_field, $sf_field, $direc
   }
 
   // Ensure that a property has a setter method if it needs to be updated.
-  if (in_array($direction, array(SALESFORCE_MAPPING_DIRECTION_SYNC, SALESFORCE_MAPPING_DIRECTION_SF_DRUPAL))) {
-    if (empty($drupal_field['setter callback'])) {
+  if (in_array($direction, array(SALESFORCE_MAPPING_DIRECTION_SYNC, SALESFORCE_MAPPING_DIRECTION_SF_BACKDROP))) {
+    if (empty($backdrop_field['setter callback'])) {
       form_set_error(
         "salesforce_field_mappings][{$key}][salesforce_field",
-        t('Drupal field %drupal_label does not have a setter method and cannot be written to.',
-          array('%drupal_label' => $drupal_field['label'])
+        t('Backdrop field %backdrop_label does not have a setter method and cannot be written to.',
+          array('%backdrop_label' => $backdrop_field['label'])
         ));
     }
   }
@@ -483,7 +483,7 @@ function salesforce_mapping_property_validation($drupal_field, $sf_field, $direc
  * Value callback for token fieldmap type.
  *
  * @param array $fieldmap
- *   Map of Drupal field to Salesforce field associations.
+ *   Map of Backdrop field to Salesforce field associations.
  * @param object $entity_wrapper
  *   Entity wrapper object.
  *
@@ -491,7 +491,7 @@ function salesforce_mapping_property_validation($drupal_field, $sf_field, $direc
  *   Token value.
  */
 function salesforce_mapping_token_fieldmap_value($fieldmap, $entity_wrapper) {
-  $token = $fieldmap['drupal_field']['fieldmap_value'];
+  $token = $fieldmap['backdrop_field']['fieldmap_value'];
   $value = token_replace($token, array(
     $entity_wrapper->type() => $entity_wrapper->value(),
   ), array('clear' => TRUE));
@@ -502,7 +502,7 @@ function salesforce_mapping_token_fieldmap_value($fieldmap, $entity_wrapper) {
  * Value callback for constant fieldmap type.
  *
  * @param array $fieldmap
- *   Map of Drupal field to Salesforce field associations.
+ *   Map of Backdrop field to Salesforce field associations.
  * @param object $entity_wrapper
  *   Entity wrapper object.
  *
@@ -510,5 +510,5 @@ function salesforce_mapping_token_fieldmap_value($fieldmap, $entity_wrapper) {
  *   Constant value.
  */
 function salesforce_mapping_constant_fieldmap_value($fieldmap, $entity_wrapper) {
-  return $fieldmap['drupal_field']['fieldmap_value'];
+  return $fieldmap['backdrop_field']['fieldmap_value'];
 }

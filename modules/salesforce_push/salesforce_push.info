@@ -1,5 +1,5 @@
 name = Salesforce Push
-description = Push data to Salesforce when updates are made to Drupal entities.
+description = Push data to Salesforce when updates are made to Backdrop entities.
 package = Salesforce
 backdrop = 1.x
 type = module

@@ -44,9 +44,9 @@ function hook_salesforce_mapping_fieldmap_type_alter($fieldmap_type) {
 function hook_salesforce_pull_mapping_object_alter(&$mapping_object, $sf_object, $mapping) {
   // Do some prematching for incoming user pulls if we don't already have a
   // match.
-  if (!$mapping_object && $mapping->drupal_entity_type == 'user') {
+  if (!$mapping_object && $mapping->backdrop_entity_type == 'user') {
     // Run some complex custom prematching logic that searches for an existing
-    // Drupal user that is a match to the incoming Salesforce data.
+    // Backdrop user that is a match to the incoming Salesforce data.
     $matched_user = mymodule_custom_sf_pull_prematch($sf_object, $mapping);
     if ($matched_user) {
       // If we have a match create mapping object on-the-fly and then reload it
@@ -54,7 +54,7 @@ function hook_salesforce_pull_mapping_object_alter(&$mapping_object, $sf_object,
       // user instead of creating a new one.
       entity_create('salesforce_mapping_object', array(
         'salesforce_id' => $sf_object['Id'],
-        'entity_type' => $mapping->drupal_entity_type,
+        'entity_type' => $mapping->backdrop_entity_type,
         'entity_id' => $matched_user->uid,
         'last_sync_message' => t('User prematch on pull'),
         'last_sync_status' => SALESFORCE_MAPPING_STATUS_SUCCESS
@@ -71,17 +71,17 @@ function hook_salesforce_pull_mapping_object_alter(&$mapping_object, $sf_object,
  *   The mapping object that was detected based on existing mappings or FALSE
  *   if no exisitng mapping object exists.
  * @param object $entity
- *   The Drupal entity that is being pushed.
+ *   The Backdrop entity that is being pushed.
  * @param SalesforceMapping $mapping
  *   The salesforce mapping that will be used during the push.
  */
 function hook_salesforce_push_mapping_object_alter(&$mapping_object, $entity, $mapping) {
   // Do some prematching for outgoing user pushes if we don't already have a
   // match.
-  if (!$mapping_object && $mapping->drupal_entity_type == 'user') {
+  if (!$mapping_object && $mapping->backdrop_entity_type == 'user') {
     // Run some complex custom prematching logic that queries Salesforce for an
     // existing contact (beyond a basic external key comparison) that is a match
-    // to this Drupal user.
+    // to this Backdrop user.
     $matched_contact = mymodule_custom_sf_push_prematch($entity, $mapping);
     if ($matched_contact) {
       // If we have a match create mapping object on-the-fly and then reload it
@@ -89,12 +89,12 @@ function hook_salesforce_push_mapping_object_alter(&$mapping_object, $entity, $m
       // contact instead of creating a new one.
       entity_create('salesforce_mapping_object', array(
         'salesforce_id' => $matched_contact['Id'],
-        'entity_type' => $mapping->drupal_entity_type,
+        'entity_type' => $mapping->backdrop_entity_type,
         'entity_id' => $entity->uid,
         'last_sync_message' => t('User prematch on push'),
         'last_sync_status' => SALESFORCE_MAPPING_STATUS_SUCCESS
       ))->save();
-      $mapping_object = salesforce_mapping_object_load_by_drupal('user', $entity->uid, TRUE);
+      $mapping_object = salesforce_mapping_object_load_by_backdrop('user', $entity->uid, TRUE);
     }
   }
 }
@@ -132,7 +132,7 @@ function hook_salesforce_mapping_entity_uris_alter(&$entity_uris) {
 
 /**
  * Prevent push to SF for an entity for a given mapping. For example: mapping a
- * single Drupal object to multiple separate Salesforce objects, but only
+ * single Backdrop object to multiple separate Salesforce objects, but only
  * syncing under certain conditions.
  *
  * @param string $entity_type
@@ -140,7 +140,7 @@ function hook_salesforce_mapping_entity_uris_alter(&$entity_uris) {
  * @param object $entity
  *   The entity object the push is for.
  * @param int $sf_sync_trigger
- *   Constant for the Drupal operation that triggered the sync.
+ *   Constant for the Backdrop operation that triggered the sync.
  * @param SalesforceMapping $mapping
  *   Salesforce mapping object for which to allow/disallow sync.
  *
@@ -179,7 +179,7 @@ function hook_salesforce_pull_allow_sf_object($sf_object, $mapping_object, $sf_m
  *   Associative array containing the field mapping in the form
  *   <code>
  *   'fieldmap_name' => array(
- *      'drupal_field' => array(
+ *      'backdrop_field' => array(
  *        'fieldmap_type' => 'property',
  *        'fieldmap_value' => 'first_name'
  *      ),
@@ -204,7 +204,7 @@ function hook_salesforce_pull_entity_value_alter(&$value, $field_map, $sf_object
  */
 function hook_salesforce_query_alter(SalesforceSelectQuery &$query) {
   if ($query->objectType == 'Contact') {
-    $query->fields[] = 'Drupal_Field__c';
+    $query->fields[] = 'Backdrop_Field__c';
     $query->addCondition('Email', "''", '!=');
   }
 }
@@ -219,10 +219,10 @@ function hook_salesforce_query_alter(SalesforceSelectQuery &$query) {
  *   The salesforce response
  * @param array $synced_entity
  *   Entity data for this push. This array has 4 keys
- *     'entity_wrapper': entity_metadata_wrapper() for the Drupal entity
+ *     'entity_wrapper': entity_metadata_wrapper() for the Backdrop entity
  *     'mapping_object': salesforce mapping object record, if it exists.
  *       Otherwise null
- *     'queue_item': If this is a SOAP push, Drupal queue item corresponding to
+ *     'queue_item': If this is a SOAP push, Backdrop queue item corresponding to
  *       this push attempt. Otherwise FALSE.
  *     'mapping': SalesforceMapping being used for this push
  */
@@ -271,10 +271,10 @@ function hook_salesforce_push_success($op, $result, $synced_entity) {
  *   The salesforce response
  * @param array $synced_entity
  *   Entity data for this push. This array has 4 keys
- *     'entity_wrapper': entity_metadata_wrapper() for the Drupal entity
+ *     'entity_wrapper': entity_metadata_wrapper() for the Backdrop entity
  *     'mapping_object': salesforce mapping object record, if it exists.
  *       Otherwise null
- *     'queue_item': If this is a SOAP push, Drupal queue item corresponding to
+ *     'queue_item': If this is a SOAP push, Backdrop queue item corresponding to
  *       this push attempt. Otherwise FALSE.
  *     'mapping': SalesforceMapping being used for this push
  */
@@ -310,7 +310,7 @@ function hook_salesforce_push_fail($op, $result, $synced_entity) {
  * Implementations should throw a SalesforcePullException to prevent the pull.
  *
  * @param $entity
- *   The Drupal entity object.
+ *   The Backdrop entity object.
  * @param array $sf_object
  *   The Salesforce query result array.
  * @param SalesforceMapping $sf_mapping
@@ -332,7 +332,7 @@ function hook_salesforce_pull_entity_presave($entity, $sf_object, $sf_mapping) {
  * Salesforce Mapping Object, but the entity will already have been saved.
  *
  * @param $entity
- *   The Drupal entity object.
+ *   The Backdrop entity object.
  * @param array $sf_object
  *   The SObject from the pull query (as an array).
  * @param SalesforceMapping $sf_mapping
@@ -343,7 +343,7 @@ function hook_salesforce_pull_entity_presave($entity, $sf_object, $sf_mapping) {
 function hook_salesforce_pull_entity_insert($entity, $sf_object, $sf_mapping) {
   // Insert the new entity into a fictional table of all Salesforce-sourced
   // entities.
-  $type = $sf_mapping->drupal_entity_type;
+  $type = $sf_mapping->backdrop_entity_type;
   $info = entity_get_info($type);
   list($id) = entity_extract_ids($type, $entity);
   db_insert('example_sf_entity')
@@ -363,7 +363,7 @@ function hook_salesforce_pull_entity_insert($entity, $sf_object, $sf_mapping) {
  * Salesforce Mapping Object, but the entity will already have been saved.
  *
  * @param $entity
- *   The Drupal entity object.
+ *   The Backdrop entity object.
  * @param array $sf_object
  *   The SObject from the pull query (as an array).
  * @param SalesforceMapping $sf_mapping
@@ -374,7 +374,7 @@ function hook_salesforce_pull_entity_insert($entity, $sf_object, $sf_mapping) {
 function hook_salesforce_pull_entity_update($entity, $sf_object, $sf_mapping) {
   // Update the entity's entry in a fictional table of all Salesforce-sourced
   // entities.
-  $type = $sf_mapping->drupal_entity_type;
+  $type = $sf_mapping->backdrop_entity_type;
   $info = entity_get_info($type);
   list($id) = entity_extract_ids($type, $entity);
   db_update('example_sf_entity')

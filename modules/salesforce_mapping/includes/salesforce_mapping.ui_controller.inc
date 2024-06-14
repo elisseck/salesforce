@@ -93,8 +93,8 @@ class SalesforceMappingUIController extends EntityDefaultUIController {
    * Overrides EntityDefaultUIController::overviewTableHeaders().
    */
   protected function overviewTableHeaders($conditions, $rows, $additional_header = array()) {
-    $additional_header[] = t('Drupal entity');
-    $additional_header[] = t('Drupal bundle');
+    $additional_header[] = t('Backdrop entity');
+    $additional_header[] = t('Backdrop bundle');
     $additional_header[] = t('Salesforce object');
     $header = parent::overviewTableHeaders($conditions, $rows, $additional_header);
     $header[] = t('Weight');
@@ -105,8 +105,8 @@ class SalesforceMappingUIController extends EntityDefaultUIController {
    * Overrides EntityDefaultUIController::overviewTableRow().
    */
   protected function overviewTableRow($conditions, $id, $entity, $additional_cols = array()) {
-    $additional_cols[] = $entity->drupal_entity_type;
-    $additional_cols[] = $entity->drupal_bundle;
+    $additional_cols[] = $entity->backdrop_entity_type;
+    $additional_cols[] = $entity->backdrop_bundle;
     $additional_cols[] = $entity->salesforce_object_type;
     return parent::overviewTableRow($conditions, $id, $entity, $additional_cols);
   }

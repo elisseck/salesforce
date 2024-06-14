@@ -12,8 +12,8 @@ function salesforce_views_views_data_alter(&$data) {
   $mappings = salesforce_mapping_load();
   $mapped_entities = array();
   foreach ($mappings as $mapping) {
-    $entity_info = entity_get_info($mapping->drupal_entity_type);
-    $mapped_entities[$mapping->drupal_entity_type] = $entity_info;
+    $entity_info = entity_get_info($mapping->backdrop_entity_type);
+    $mapped_entities[$mapping->backdrop_entity_type] = $entity_info;
   }
   foreach ($mapped_entities as $entity_type => $info) {
     $data[$info['base table']]['salesforce_mapping_object'] = array(

@@ -76,8 +76,7 @@ function salesforce_help($path, $arg) {
       $output .= '</ol>';
       $output .= '<h4>' . t('Required modules') . '</h4>';
       $output .= '<ul>';
-      $output .= '<li>' . l(t('Entity API'), 'http://drupal.org/project/entity') . '</li>';
-      $output .= '<li>' . l(t('Libraries, only for SOAP API'), 'http://drupal.org/project/libraries') . '</li>';
+      $output .= '<li>' . l(t('Entity Plus'), 'http://backdropcms.org/project/entity_plus') . '</li>';
       $output .= '</ul>';
       $output .= '<h3>' . t('Modules') . '</h3>';
       $output .= '<h4>' . t('Salesforce (salesforce)') . '</h4>';

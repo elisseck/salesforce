@@ -157,7 +157,7 @@ class EntityAPIController extends DefaultEntityController implements EntityAPICo
   /**
    * Overridden.
    *
-   * @see DrupalDefaultEntityController#__construct()
+   * @see BackdropDefaultEntityController#__construct()
    */
   public function __construct($entityType) {
     parent::__construct($entityType);
@@ -172,7 +172,7 @@ class EntityAPIController extends DefaultEntityController implements EntityAPICo
   }
 
   /**
-   * Overrides DrupalDefaultEntityController::buildQuery().
+   * Overrides BackdropDefaultEntityController::buildQuery().
    */
   protected function buildQuery($ids, $conditions = array(), $revision_id = FALSE) {
     $query = parent::buildQuery($ids, $conditions, $revision_id);
@@ -203,7 +203,7 @@ class EntityAPIController extends DefaultEntityController implements EntityAPICo
   /**
    * Overridden.
    *
-   * @see DrupalDefaultEntityController#load($ids, $conditions)
+   * @see BackdropDefaultEntityController#load($ids, $conditions)
    *
    * In contrast to the parent implementation we factor out query execution, so
    * fetching can be further customized easily.
@@ -321,7 +321,7 @@ class EntityAPIController extends DefaultEntityController implements EntityAPICo
   }
 
   /**
-   * Overrides DrupalDefaultEntityController::resetCache().
+   * Overrides BackdropDefaultEntityController::resetCache().
    */
   public function resetCache(array $ids = NULL) {
     $this->cacheComplete = FALSE;
@@ -776,7 +776,7 @@ class EntityAPIControllerExportable extends EntityAPIController {
   /**
    * Overridden.
    *
-   * @see DrupalDefaultEntityController::cacheGet()
+   * @see BackdropDefaultEntityController::cacheGet()
    */
   protected function cacheGet($ids, $conditions = array()) {
     if (!empty($this->entityCache) && $ids !== array()) {
@@ -824,7 +824,7 @@ class EntityAPIControllerExportable extends EntityAPIController {
   /**
    * Overridden.
    *
-   * @see DrupalDefaultEntityController::cacheSet()
+   * @see BackdropDefaultEntityController::cacheSet()
    */
   protected function cacheSet($entities) {
     $this->entityCache += $entities;
@@ -840,7 +840,7 @@ class EntityAPIControllerExportable extends EntityAPIController {
    * Changed to call type-specific hook with the entities keyed by name if they
    * have one.
    *
-   * @see DrupalDefaultEntityController::attachLoad()
+   * @see BackdropDefaultEntityController::attachLoad()
    */
   protected function attachLoad(&$queried_entities, $revision_id = FALSE) {
     // Attach fields.

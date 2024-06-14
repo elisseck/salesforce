@@ -41,53 +41,53 @@ function salesforce_mapping_form($form, &$form_state, SalesforceMapping $mapping
     ),
   );
 
-  $form['drupal_entity'] = array(
-    '#title' => t('Drupal entity'),
+  $form['backdrop_entity'] = array(
+    '#title' => t('Backdrop entity'),
     '#type' => 'fieldset',
     '#attributes' => array(
-      'id' => array('edit-drupal-entity'),
+      'id' => array('edit-backdrop-entity'),
     ),
   );
 
-  $drupal_entity_type = _salesforce_mapping_get_default_value('drupal_entity_type', $form_state);
-  $form['drupal_entity']['drupal_entity_type'] = array(
-    '#title' => t('Drupal Entity Type'),
-    '#id' => 'edit-drupal-entity-type',
+  $backdrop_entity_type = _salesforce_mapping_get_default_value('backdrop_entity_type', $form_state);
+  $form['backdrop_entity']['backdrop_entity_type'] = array(
+    '#title' => t('Backdrop Entity Type'),
+    '#id' => 'edit-backdrop-entity-type',
     '#type' => 'select',
-    '#description' => t('Select a Drupal entity type to map to a Salesforce object.'),
-    '#options' => _salesforce_mapping_get_drupal_entities($form_state),
-    '#default_value' => $drupal_entity_type,
+    '#description' => t('Select a Backdrop entity type to map to a Salesforce object.'),
+    '#options' => _salesforce_mapping_get_backdrop_entities($form_state),
+    '#default_value' => $backdrop_entity_type,
     '#required' => TRUE,
     '#ajax' => array(
       'callback' => 'salesforce_mapping_form_callback',
-      'wrapper' => 'edit-drupal-entity',
+      'wrapper' => 'edit-backdrop-entity',
     ),
   );
 
-  $drupal_bundle = _salesforce_mapping_get_default_value('drupal_bundle', $form_state);
-  $form['drupal_entity']['drupal_bundle'] = array(
-    '#title' => t('Drupal Entity Bundle'),
-    '#id' => 'edit-drupal-bundle',
+  $backdrop_bundle = _salesforce_mapping_get_default_value('backdrop_bundle', $form_state);
+  $form['backdrop_entity']['backdrop_bundle'] = array(
+    '#title' => t('Backdrop Entity Bundle'),
+    '#id' => 'edit-backdrop-bundle',
     '#type' => 'select',
     '#required' => TRUE,
-    '#description' => t('Select a Drupal entity bundle to map to a Salesforce object.'),
+    '#description' => t('Select a Backdrop entity bundle to map to a Salesforce object.'),
     '#ajax' => array(
       'callback' => 'salesforce_mapping_form_callback',
-      'wrapper' => 'edit-drupal-entity',
+      'wrapper' => 'edit-backdrop-entity',
     ),
   );
-  if ($drupal_entity_type) {
-    $form['drupal_entity']['drupal_bundle'] += array(
-      '#default_value' => $drupal_bundle,
-      '#options' => _salesforce_mapping_get_entity_bundle_options($drupal_entity_type),
+  if ($backdrop_entity_type) {
+    $form['backdrop_entity']['backdrop_bundle'] += array(
+      '#default_value' => $backdrop_bundle,
+      '#options' => _salesforce_mapping_get_entity_bundle_options($backdrop_entity_type),
     );
   }
   else {
-    $form['drupal_entity']['drupal_bundle'] += array(
+    $form['backdrop_entity']['backdrop_bundle'] += array(
       '#disabled' => TRUE,
       '#default_value' => '',
       '#options' => array(
-        '' => t('Select drupal entity type'),
+        '' => t('Select backdrop entity type'),
       ),
     );
   }
@@ -200,7 +200,7 @@ function salesforce_mapping_form($form, &$form_state, SalesforceMapping $mapping
       '#theme' => 'salesforce_fieldmap_form_table',
       '#tree' => TRUE,
       '#header' => array(
-        'drupal_field' => t('Drupal field'),
+        'backdrop_field' => t('Backdrop field'),
         'salesforce_field' => t('Salesforce field'),
         'key' => t('Key') . '*',
         'direction' => t('Direction'),
@@ -211,7 +211,7 @@ function salesforce_mapping_form($form, &$form_state, SalesforceMapping $mapping
       ),
     );
 
-    $drupal_type_options = _salesforce_mapping_get_drupal_type_options();
+    $backdrop_type_options = _salesforce_mapping_get_backdrop_type_options();
 
     $sf_fields = _salesforce_mapping_get_salesforce_field_options($salesforce_object_type, $form_state);
     $has_token_type = FALSE;
@@ -226,20 +226,20 @@ function salesforce_mapping_form($form, &$form_state, SalesforceMapping $mapping
       );
       $row = &$form['salesforce_field_mappings_wrapper']['salesforce_field_mappings'][$delta];
 
-      $row['drupal_field'] = array(
+      $row['backdrop_field'] = array(
         '#type' => 'container',
         '#attributes' => array(
-          'id' => array('edit-drupal-field-' . $delta),
+          'id' => array('edit-backdrop-field-' . $delta),
         ),
       );
 
       $fieldmap_type_name = _salesforce_mapping_get_default_value('fieldmap_type', $form_state, $delta);
       $fieldmap_type = salesforce_mapping_get_fieldmap_types($fieldmap_type_name);
       $has_token_type = ($fieldmap_type_name == 'token') ? TRUE : $has_token_type;
-      $row['drupal_field']['fieldmap_type'] = array(
+      $row['backdrop_field']['fieldmap_type'] = array(
         '#id' => 'edit-fieldmap-type-' . $delta,
         '#type' => 'select',
-        '#options' => $drupal_type_options,
+        '#options' => $backdrop_type_options,
         '#default_value' => $fieldmap_type_name,
         '#ajax' => array(
           'wrapper' => $row_id,
@@ -248,7 +248,7 @@ function salesforce_mapping_form($form, &$form_state, SalesforceMapping $mapping
       );
 
       if ($fieldmap_type_name) {
-        $row['drupal_field']['fieldmap_value'] = array(
+        $row['backdrop_field']['fieldmap_value'] = array(
           '#id' => 'edit-fieldmap-value-' . $delta,
           '#type' => $fieldmap_type['field_type'],
           '#description' => check_plain($fieldmap_type['description']),
@@ -256,8 +256,8 @@ function salesforce_mapping_form($form, &$form_state, SalesforceMapping $mapping
           '#default_value' => _salesforce_mapping_get_default_value('fieldmap_value', $form_state, $delta),
         );
         if (!empty($fieldmap_type['options_callback'])) {
-          $row['drupal_field']['fieldmap_value']['#options'] = call_user_func($fieldmap_type['options_callback'], $drupal_entity_type, $drupal_bundle);
-          $row['drupal_field']['fieldmap_value']['#options'][''] = '- ' . t('Select @field_type', array('@field_type' => $fieldmap_type_name)) . ' -';
+          $row['backdrop_field']['fieldmap_value']['#options'] = call_user_func($fieldmap_type['options_callback'], $backdrop_entity_type, $backdrop_bundle);
+          $row['backdrop_field']['fieldmap_value']['#options'][''] = '- ' . t('Select @field_type', array('@field_type' => $fieldmap_type_name)) . ' -';
         }
       }
 
@@ -318,11 +318,11 @@ function salesforce_mapping_form($form, &$form_state, SalesforceMapping $mapping
       // Entity type machine names have underscores, not dashes.
       // The token key can be either, so $token_type is set based on a match in
       // $info['types'].
-      if(isset($info['types'][$drupal_entity_type])) {
-        $token_type = $drupal_entity_type;
+      if(isset($info['types'][$backdrop_entity_type])) {
+        $token_type = $backdrop_entity_type;
       }
       else {
-        $token_type = str_replace("_", "-", $drupal_entity_type);
+        $token_type = str_replace("_", "-", $backdrop_entity_type);
       }
 
       if(isset($info['types'][$token_type])) {
@@ -355,7 +355,7 @@ function salesforce_mapping_form($form, &$form_state, SalesforceMapping $mapping
   $form['sync_triggers'] = array(
     '#title' => t('Action triggers'),
     '#type' => 'checkboxes',
-    '#description' => t('Select which actions on Drupal entities and Salesforce objects should trigger a synchronization. These settings are used by the salesforce_push and salesforce_pull modules respectively.'),
+    '#description' => t('Select which actions on Backdrop entities and Salesforce objects should trigger a synchronization. These settings are used by the salesforce_push and salesforce_pull modules respectively.'),
     '#default_value' => $trigger_defaults,
     '#options' => $trigger_options,
   );
@@ -385,11 +385,11 @@ function salesforce_mapping_form_callback($form, $form_state) {
   $delta = isset($parents[2]) ? $parents[2] : NULL;
   $commands = array();
   switch ($trigger) {
-    case 'drupal_entity_type':
-    case 'drupal_bundle':
+    case 'backdrop_entity_type':
+    case 'backdrop_bundle':
       // Requires updating itself and the field map.
       $commands = array(
-        ajax_command_replace('#edit-drupal-entity', render($form['drupal_entity'])),
+        ajax_command_replace('#edit-backdrop-entity', render($form['backdrop_entity'])),
         ajax_command_replace('#edit-salesforce-field-mappings-wrapper', render($form['salesforce_field_mappings_wrapper'])),
       );
       break;
@@ -570,8 +570,8 @@ function salesforce_mapping_form_validate($form, &$form_state) {
 
   $properties = array(
     'salesforce_object_type' => $values['salesforce_object_type'],
-    'drupal_entity_type' => $values['drupal_entity_type'],
-    'drupal_bundle' => $values['drupal_bundle'],
+    'backdrop_entity_type' => $values['backdrop_entity_type'],
+    'backdrop_bundle' => $values['backdrop_bundle'],
   );
 
   $existing_mappings = salesforce_mapping_load_multiple($properties);
@@ -584,38 +584,38 @@ function salesforce_mapping_form_validate($form, &$form_state) {
     }
     foreach ($values['sync_triggers'] as $trigger => $trigger_enabled) {
       if ($trigger_enabled && $existing_mapping->sync_triggers & $trigger) {
-        form_set_error('sync_triggers[' . $trigger . ']', t('This Drupal bundle has already been mapped to a Salesforce object using this trigger.'));
+        form_set_error('sync_triggers[' . $trigger . ']', t('This Backdrop bundle has already been mapped to a Salesforce object using this trigger.'));
       }
     }
   }
 
   // If Salesforce Object Create is selected, ensure that at least one mapping
-  // is set to sync or SF to Drupal to prevent "empty" entities.
+  // is set to sync or SF to Backdrop to prevent "empty" entities.
   if ($values['sync_triggers'][SALESFORCE_MAPPING_SYNC_SF_CREATE] && isset($values['salesforce_field_mappings'])) {
     $valid_salesforce_create = FALSE;
     foreach ($values['salesforce_field_mappings'] as $mapping) {
-      if ($mapping['direction'] == SALESFORCE_MAPPING_DIRECTION_SYNC || $mapping['direction'] == SALESFORCE_MAPPING_DIRECTION_SF_DRUPAL) {
+      if ($mapping['direction'] == SALESFORCE_MAPPING_DIRECTION_SYNC || $mapping['direction'] == SALESFORCE_MAPPING_DIRECTION_SF_BACKDROP) {
         $valid_salesforce_create = TRUE;
         break;
       }
     }
     if (!$valid_salesforce_create) {
-      form_set_error('mapping issue', t('One mapping must be set to "Sync" or "SF to Drupal" when "Salesforce object create" is selected'));
+      form_set_error('mapping issue', t('One mapping must be set to "Sync" or "SF to Backdrop" when "Salesforce object create" is selected'));
     }
   }
 
   if (isset($values['salesforce_field_mappings'])) {
     // Validate field mappings.
-    $info = entity_get_info($values['drupal_entity_type']);
-    $properties = entity_plus_get_all_property_info($values['drupal_entity_type']);
+    $info = entity_get_info($values['backdrop_entity_type']);
+    $properties = entity_plus_get_all_property_info($values['backdrop_entity_type']);
     $sfobject = _salesforce_mapping_get_salesforce_object($values['salesforce_object_type'], $form_state);
     $sf_fields = isset($sfobject['fields']) ? $sfobject['fields'] : array();
     $key_delta = isset($values['key']) ? $values['key'] : FALSE;
 
     foreach ($values['salesforce_field_mappings'] as $key => $mapping) {
-      $drupal_field_type = $mapping['drupal_field']['fieldmap_type'];
-      $field_map = salesforce_mapping_get_fieldmap_types($drupal_field_type);
-      if (!empty($mapping['drupal_field']) && !empty($mapping['salesforce_field']) && isset($field_map['validation_callback'])) {
+      $backdrop_field_type = $mapping['backdrop_field']['fieldmap_type'];
+      $field_map = salesforce_mapping_get_fieldmap_types($backdrop_field_type);
+      if (!empty($mapping['backdrop_field']) && !empty($mapping['salesforce_field']) && isset($field_map['validation_callback'])) {
         if (isset($field_map['salesforce_multiple_fields']) && $field_map['salesforce_multiple_fields']) {
           $sf_field = array();
           foreach ($mapping['salesforce_field'] as $field) {
@@ -627,15 +627,15 @@ function salesforce_mapping_form_validate($form, &$form_state) {
           $sf_field = reset($filtered);
         }
 
-        $field_array = explode(':', $mapping['drupal_field']['fieldmap_value']);
-        $drupal_field = count($field_array) === 1 ? $properties[$field_array[0]] : $properties[$field_array[0]]['property info'][$field_array[1]];
+        $field_array = explode(':', $mapping['backdrop_field']['fieldmap_value']);
+        $backdrop_field = count($field_array) === 1 ? $properties[$field_array[0]] : $properties[$field_array[0]]['property info'][$field_array[1]];
         if (isset($field_map['salesforce_multiple_fields']) && $field_map['salesforce_multiple_fields']) {
           foreach ($sf_field as $field) {
-            call_user_func($field_map['validation_callback'], $drupal_field, $field, $mapping['direction'], $key);
+            call_user_func($field_map['validation_callback'], $backdrop_field, $field, $mapping['direction'], $key);
           }
         }
         else {
-          call_user_func($field_map['validation_callback'], $drupal_field, $sf_field, $mapping['direction'], $key);
+          call_user_func($field_map['validation_callback'], $backdrop_field, $sf_field, $mapping['direction'], $key);
         }
         // Ensure valid SF external ID field.
         if ($key_delta !== FALSE && $key === (int) $key_delta && !($sf_field['externalId'] || $sf_field['idLookup'])) {
@@ -675,9 +675,9 @@ function salesforce_mapping_form_submit($form, &$form_state) {
     $sfobject = _salesforce_mapping_get_salesforce_object($values['salesforce_object_type'], $form_state);
     $sf_fields = isset($sfobject['fields']) ? $sfobject['fields'] : array();
     foreach ($values['salesforce_field_mappings'] as $key => $mapping) {
-      $drupal_field_type = $mapping['drupal_field']['fieldmap_type'];
-      $field_map = salesforce_mapping_get_fieldmap_types($drupal_field_type);
-      if (!empty($mapping['drupal_field']) && !empty($mapping['salesforce_field'])) {
+      $backdrop_field_type = $mapping['backdrop_field']['fieldmap_type'];
+      $field_map = salesforce_mapping_get_fieldmap_types($backdrop_field_type);
+      if (!empty($mapping['backdrop_field']) && !empty($mapping['salesforce_field'])) {
         if (isset($field_map['salesforce_multiple_fields']) && $field_map['salesforce_multiple_fields']) {
           $sf_field = array();
           foreach ($mapping['salesforce_field'] as $field) {
@@ -690,7 +690,7 @@ function salesforce_mapping_form_submit($form, &$form_state) {
           $sf_field = reset($filtered);
         }
         $mappings[] = array(
-          'drupal_field' => $mapping['drupal_field'],
+          'backdrop_field' => $mapping['backdrop_field'],
           'salesforce_field' => $sf_field,
           'key' => $key_delta !== FALSE && $key_delta != ""
             && ($key === (int) $key_delta),
@@ -714,8 +714,8 @@ function salesforce_mapping_form_submit($form, &$form_state) {
     'salesforce_object_type' => $values['salesforce_object_type'],
     'salesforce_record_types_allowed' => $values['salesforce_record_types_allowed'],
     'salesforce_record_type_default' => $values['salesforce_record_type_default'],
-    'drupal_entity_type' => $values['drupal_entity_type'],
-    'drupal_bundle' => $values['drupal_bundle'],
+    'backdrop_entity_type' => $values['backdrop_entity_type'],
+    'backdrop_bundle' => $values['backdrop_bundle'],
     'description' => '',
     'field_mappings' => $mappings,
     'sync_triggers' => $sync_triggers,
@@ -787,11 +787,11 @@ function _salesforce_mapping_get_default_value($field, &$form_state, $delta = NU
       $value = &$mapping->{$field};
     }
 
-    // Special case for drupal bundle.
-    if ($field == 'drupal_bundle') {
-      $drupal_entity = _salesforce_mapping_get_default_value('drupal_entity_type', $form_state);
-      $entity_bundle_options = array_keys(_salesforce_mapping_get_entity_bundle_options($drupal_entity, FALSE));
-      if (empty($drupal_entity) || !in_array($value, $entity_bundle_options)) {
+    // Special case for backdrop bundle.
+    if ($field == 'backdrop_bundle') {
+      $backdrop_entity = _salesforce_mapping_get_default_value('backdrop_entity_type', $form_state);
+      $entity_bundle_options = array_keys(_salesforce_mapping_get_entity_bundle_options($backdrop_entity, FALSE));
+      if (empty($backdrop_entity) || !in_array($value, $entity_bundle_options)) {
         $value = NULL;
       }
     }
@@ -828,11 +828,11 @@ function _salesforce_mapping_get_default_value($field, &$form_state, $delta = NU
     switch ($field) {
       case 'fieldmap_type':
       case 'fieldmap_value':
-        if (isset($form_state['input']['salesforce_field_mappings'][$delta]['drupal_field'][$field])) {
-          $value = &$form_state['input']['salesforce_field_mappings'][$delta]['drupal_field'][$field];
+        if (isset($form_state['input']['salesforce_field_mappings'][$delta]['backdrop_field'][$field])) {
+          $value = &$form_state['input']['salesforce_field_mappings'][$delta]['backdrop_field'][$field];
         }
-        elseif (!empty($mapping) && isset($mapping->field_mappings[$delta]['drupal_field'][$field])) {
-          $value = &$mapping->field_mappings[$delta]['drupal_field'][$field];
+        elseif (!empty($mapping) && isset($mapping->field_mappings[$delta]['backdrop_field'][$field])) {
+          $value = &$mapping->field_mappings[$delta]['backdrop_field'][$field];
         }
         break;
 
@@ -909,7 +909,7 @@ function _salesforce_mapping_get_default_value($field, &$form_state, $delta = NU
 }
 
 /**
- * Return a list of Drupal entities that implement EntityAPIControllerInterface.
+ * Return a list of Backdrop entities that implement EntityAPIControllerInterface.
  *
  * @param array $form_state
  *   Current state of the form to store and retreive results from to minimize
@@ -923,22 +923,22 @@ function _salesforce_mapping_get_default_value($field, &$form_state, $delta = NU
  *   An array of values keyed by machine name of the entity with the label as
  *   the value, formatted to be appropriate as a value for #options.
  */
-function _salesforce_mapping_get_drupal_entities(&$form_state, $include_select = TRUE) {
+function _salesforce_mapping_get_backdrop_entities(&$form_state, $include_select = TRUE) {
 
-  if (isset($form_state['sfm_storage']['drupal_entity_property_info'])) {
-    $property_info = $form_state['sfm_storage']['drupal_entity_property_info'];
+  if (isset($form_state['sfm_storage']['backdrop_entity_property_info'])) {
+    $property_info = $form_state['sfm_storage']['backdrop_entity_property_info'];
   }
   else {
     module_load_include('inc', 'entity', 'entity.info');
     $property_info = entity_plus_get_property_info();
     $entity_info = entity_get_info();
     $property_info = array_merge_recursive($entity_info, $property_info);
-    $form_state['sfm_storage']['drupal_entity_property_info'] = $property_info;
+    $form_state['sfm_storage']['backdrop_entity_property_info'] = $property_info;
   }
 
   $types = array();
   if ($include_select) {
-    $types[''] = '- ' . t('Select Drupal entity') . ' -';
+    $types[''] = '- ' . t('Select Backdrop entity') . ' -';
   }
   foreach ($property_info as $type => $properties) {
     // Exclude Salesforce Mapping and Salesforce Object Mapping entities as
@@ -958,7 +958,7 @@ function _salesforce_mapping_get_drupal_entities(&$form_state, $include_select =
 /**
  * Helper to retreive a list of bundle options for a given entity type.
  *
- * @param string $drupal_entity_type
+ * @param string $backdrop_entity_type
  *   An entity type whose bundles you want to retreive.
  * @param bool $include_select
  *   Choice to choose a select option or not.  If TRUE, the first item will be
@@ -969,8 +969,8 @@ function _salesforce_mapping_get_drupal_entities(&$form_state, $include_select =
  *   An array of values keyed by machine name of the bundle with the label as
  *   the value, formatted to be appropriate as a value for #options.
  */
-function _salesforce_mapping_get_entity_bundle_options($drupal_entity_type, $include_select = TRUE) {
-  $info = entity_get_info($drupal_entity_type);
+function _salesforce_mapping_get_entity_bundle_options($backdrop_entity_type, $include_select = TRUE) {
+  $info = entity_get_info($backdrop_entity_type);
   $bundles = array();
   if ($include_select) {
     $bundles[''] = '- ' . t('Select entity bundle') . ' -';
@@ -1126,7 +1126,7 @@ function _salesforce_mapping_get_salesforce_field_options($salesforce_object_typ
 }
 
 /**
- * Helper to generate a list of fieldtypes for Drupal fields.
+ * Helper to generate a list of fieldtypes for Backdrop fields.
  *
  * @param bool $include_select
  *   Choice to choose a select option or not.  If TRUE, the first item will be
@@ -1137,16 +1137,16 @@ function _salesforce_mapping_get_salesforce_field_options($salesforce_object_typ
  *   An array of values keyed by machine name of the fieldmap type with the
  *   label as the value, formatted to be appropriate as a value for #options.
  */
-function _salesforce_mapping_get_drupal_type_options($include_select = TRUE) {
+function _salesforce_mapping_get_backdrop_type_options($include_select = TRUE) {
   $types = salesforce_mapping_get_fieldmap_types();
-  $drupal_type_options = array();
+  $backdrop_type_options = array();
   if ($include_select) {
-    $drupal_type_options[''] = '- ' . t('Select Drupal field type') . ' -';
+    $backdrop_type_options[''] = '- ' . t('Select Backdrop field type') . ' -';
   }
   foreach ($types as $key => $fieldmap_type) {
-    $drupal_type_options[$key] = $fieldmap_type['label'];
+    $backdrop_type_options[$key] = $fieldmap_type['label'];
   }
-  return $drupal_type_options;
+  return $backdrop_type_options;
 }
 
 /**
@@ -1160,9 +1160,9 @@ function _salesforce_mapping_get_sync_trigger_options() {
   $options = array();
   if (module_exists('salesforce_push')) {
     $options += array(
-      SALESFORCE_MAPPING_SYNC_DRUPAL_CREATE => t('Drupal entity create'),
-      SALESFORCE_MAPPING_SYNC_DRUPAL_UPDATE => t('Drupal entity update'),
-      SALESFORCE_MAPPING_SYNC_DRUPAL_DELETE => t('Drupal entity delete'),
+      SALESFORCE_MAPPING_SYNC_BACKDROP_CREATE => t('Backdrop entity create'),
+      SALESFORCE_MAPPING_SYNC_BACKDROP_UPDATE => t('Backdrop entity update'),
+      SALESFORCE_MAPPING_SYNC_BACKDROP_DELETE => t('Backdrop entity delete'),
     );
   }
   if (module_exists('salesforce_pull')) {
@@ -1186,12 +1186,12 @@ function _salesforce_mapping_get_direction_options() {
   $options = array();
   if (module_exists('salesforce_pull')) {
     $options += array(
-      SALESFORCE_MAPPING_DIRECTION_SF_DRUPAL => t('SF to Drupal'),
+      SALESFORCE_MAPPING_DIRECTION_SF_BACKDROP => t('SF to Backdrop'),
     );
   }
   if (module_exists('salesforce_push')) {
     $options += array(
-      SALESFORCE_MAPPING_DIRECTION_DRUPAL_SF => t('Drupal to SF'),
+      SALESFORCE_MAPPING_DIRECTION_BACKDROP_SF => t('Backdrop to SF'),
     );
   }
 
@@ -1219,13 +1219,13 @@ function _salesforce_mapping_get_direction_options() {
 function _salesforce_mapping_get_required_mapping_fields(&$form, &$form_state) {
   // Retreive the label of the fields from the form to keep these in sync and
   // hopefully multilingual compliant.
-  $drupal_entity_type_label = &$form['drupal_entity']['drupal_entity_type']['#title'];
-  $drupal_bundle_label = &$form['drupal_entity']['drupal_bundle']['#title'];
+  $backdrop_entity_type_label = &$form['backdrop_entity']['backdrop_entity_type']['#title'];
+  $backdrop_bundle_label = &$form['backdrop_entity']['backdrop_bundle']['#title'];
   $salesforce_object_type_label = &$form['salesforce_object']['salesforce_object_type']['#title'];
 
   $fields = array(
-    $drupal_entity_type_label => _salesforce_mapping_get_default_value('drupal_entity_type', $form_state),
-    $drupal_bundle_label => _salesforce_mapping_get_default_value('drupal_bundle', $form_state),
+    $backdrop_entity_type_label => _salesforce_mapping_get_default_value('backdrop_entity_type', $form_state),
+    $backdrop_bundle_label => _salesforce_mapping_get_default_value('backdrop_bundle', $form_state),
     $salesforce_object_type_label => _salesforce_mapping_get_default_value('salesforce_object_type', $form_state),
   );
 
@@ -1250,7 +1250,7 @@ function _salesforce_mapping_get_required_mapping_fields(&$form, &$form_state) {
 function _salesforce_mapping_get_empty_field_map_row() {
   $direction_options_keys = array_keys(_salesforce_mapping_get_direction_options());
   return array(
-    'drupal_field' => '',
+    'backdrop_field' => '',
     'salesforce_field' => '',
     'key' => '',
     'direction' => end($direction_options_keys),
