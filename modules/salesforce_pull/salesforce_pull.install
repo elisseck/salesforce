@@ -9,10 +9,15 @@
  * Implements hook_uninstall().
  */
 function salesforce_pull_uninstall() {
-  // Remove salesforce_pull* variables.
-  db_delete('variable')
-    ->condition('name', 'salesforce_pull%', 'LIKE')
-    ->execute();
+  config_clear('salesforce_pull.settings', 'salesforce_pull_webhook_enable');
+  config_clear('salesforce_pull.settings', 'salesforce_pull_webhook_key');
+  config_clear('salesforce_pull.settings', 'salesforce_pull_throttle');
+  config_clear('salesforce_pull.settings', 'salesforce_pull_last_sync');
+  config_clear('salesforce_pull.settings', 'salesforce_pull_max_queue_size');
+  config_clear('salesforce_pull.settings', 'salesforce_pull_last_sync_type');
+  config_clear('salesforce_pull.settings', 'salesforce_pull_delete_last_type');
+  config_clear('salesforce_pull.settings', 'salesforce_pull_delete_last_merge_fieldstype');
+  config_clear('salesforce_pull.settings', 'salesforce_pull_last_sync_merge_fieldstype');
 }
 
 /**

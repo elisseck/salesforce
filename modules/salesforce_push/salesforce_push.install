@@ -9,7 +9,6 @@
  */
 function salesforce_push_install() {
   config_set('salesforce_push.settings', 'salesforce_push_limit', 50);
-  // Dynamically generated variable data was detected on the following lines.
 }
 
 /**
@@ -18,9 +17,6 @@ function salesforce_push_install() {
 function salesforce_push_uninstall() {
   config_clear('salesforce_push.settings', 'salesforce_push_limit');
 }
-
-// TODO The old hook_update_N functions cannot be applied to Backdrop.
-function salesforce_push_update_7300() { }
 
 /**
  * Implements hook_update_last_removed().
