@@ -374,3 +374,43 @@ function salesforce_mapping_schema() {
 function salesforce_mapping_update_last_removed() {
   return 7308;
 }
+
+/**
+ * Swap column labels to backdrop
+ */
+function salesforce_mapping_update_1000() {
+  db_drop_index('salesforce_mapping', 'name_sf_type_drupal_type');
+  db_change_field('salesforce_mapping', 'drupal_entity_type', 'backdrop_entity_type', [
+    'type' => 'varchar',
+    'length' => 128,
+    'not null' => TRUE
+  ]);
+  db_change_field('salesforce_mapping', 'drupal_bundle', 'backdrop_bundle', [
+    'type' => 'varchar',
+    'length' => 128,
+    'not null' => TRUE
+  ]);
+  db_add_index('salesforce_mapping', 'name_sf_type_backdrop_type', [
+    'backdrop_entity_type',
+    'backdrop_bundle',
+    'salesforce_object_type'
+  ]);
+
+  db_drop_index('salesforce_mapping_object', 'drupal_entity');
+  db_drop_unique_key('salesforce_mapping_object', 'salesforce_drupal');
+  db_add_index('salesforce_mapping_object', 'backdrop_entity', [
+    'entity_type',
+    'entity_id'
+  ]);
+  db_add_unique_key('salesforce_mapping_object', 'salesforce_backdrop', [
+    'entity_type',
+    'entity_id'
+  ]);
+
+  db_drop_index('salesforce_mapping_object_revision', 'backdrop_entity');
+  db_add_index('salesforce_mapping_object_revision', 'backdrop_entity', [
+    'entity_type',
+    'entity_id'
+  ]);
+
+}
