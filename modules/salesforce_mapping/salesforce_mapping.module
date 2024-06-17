@@ -773,7 +773,7 @@ function salesforce_mapping_object_property_entity_set(SalesforceMappingObject $
  * Callback to get the salesforce mapping object for an entity.
  */
 function salesforce_mapping_object_entity_property_get($entity, array $options, $property_name, $entity_type) {
-  $mapping_object = salesforce_mapping_object_load_by_backdrop($entity_type, entity_id($entity_type, $entity));
+  $mapping_object = salesforce_mapping_object_load_by_backdrop($entity_type, entity_plus_id($entity_type, $entity));
   if ($mapping_object) {
     return entity_metadata_wrapper('salesforce_mapping_object', $mapping_object);
   }
