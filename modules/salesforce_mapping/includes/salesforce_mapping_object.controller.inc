@@ -80,14 +80,4 @@ class SalesforceMappingObjectController extends EntityPlusController {
 
     return $build;
   }
-  function salesforce_mapping_autoload_info() {
-    return array(
-      'SalesforceMapping' => 'includes/salesforce_mapping.entity.inc',
-      'SalesforceMappingUIController' => 'includes/salesforce_mapping.ui_controller.inc',
-      'SalesforceMappingObjectController' => 'includes/salesforce_mapping_object.controller.inc',
-      'SalesforceMappingObject' => 'includes/salesforce_mapping_object.entity.inc',
-      'SalesforceMappingObjectMetadataController' => 'includes/salesforce_mapping_object.metadata.inc',
-      'EntityAPIControllerExportable' =>'includes/salesforce_mapping.entity.controller.inc',
-    );
-  }
 }

@@ -77,7 +77,7 @@ function salesforce_mapping_entity_info() {
   $return = array(
     'salesforce_mapping' => array(
       'label' => t('Salesforce Mapping'),
-      'controller class' => 'EntityAPIControllerExportable',
+      'controller class' => 'EntityPlusControllerExportable',
       'entity class' => 'SalesforceMapping',
       'base table' => 'salesforce_mapping',
       'uri callback' => 'entity_class_uri',
@@ -1004,6 +1004,5 @@ function salesforce_mapping_autoload_info() {
     'SalesforceMappingObjectController' => 'includes/salesforce_mapping_object.controller.inc',
     'SalesforceMappingObject' => 'includes/salesforce_mapping_object.entity.inc',
     'SalesforceMappingObjectMetadataController' => 'includes/salesforce_mapping_object.metadata.inc',
-    'EntityAPIControllerExportable' =>'includes/salesforce_mapping.entity.controller.inc',
   );
 }

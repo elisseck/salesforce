@@ -909,7 +909,7 @@ function _salesforce_mapping_get_default_value($field, &$form_state, $delta = NU
 }
 
 /**
- * Return a list of Backdrop entities that implement EntityAPIControllerInterface.
+ * Return a list of Backdrop entities that implement EntityPlusControllerInterface.
  *
  * @param array $form_state
  *   Current state of the form to store and retreive results from to minimize
