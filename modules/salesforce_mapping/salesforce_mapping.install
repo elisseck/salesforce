@@ -379,6 +379,11 @@ function salesforce_mapping_update_last_removed() {
  * Swap column labels to backdrop
  */
 function salesforce_mapping_update_1000() {
+  salesforce_mapping_update_tables_to_backdrop();
+  salesforce_mapping_update_data_to_backdrop();
+}
+
+function salesforce_mapping_update_tables_to_backdrop() {
   db_drop_index('salesforce_mapping', 'name_sf_type_drupal_type');
   db_change_field('salesforce_mapping', 'drupal_entity_type', 'backdrop_entity_type', [
     'type' => 'varchar',
@@ -412,5 +417,23 @@ function salesforce_mapping_update_1000() {
     'entity_type',
     'entity_id'
   ]);
+}
 
+function salesforce_mapping_update_data_to_backdrop() {
+  $query = db_query("SELECT salesforce_mapping_id, field_mappings FROM {salesforce_mapping}");
+  $records = $query->fetchAll();
+  foreach ($records as $record) {
+    $mapping_array = unserialize($record->field_mappings);
+    foreach ($mapping_array as $key => $map) {
+      $map['direction'] = str_replace('drupal', 'backdrop', $map['direction']);
+      $map['backdrop_field'] = $map['drupal_field'];
+      unset($map['drupal_field']);
+      $mapping_array[$key] = $map;
+    }
+    $new_serialized = serialize($mapping_array);
+    db_update('salesforce_mapping')
+      ->fields(['field_mappings' => $new_serialized])
+      ->condition('salesforce_mapping_id', $record->salesforce_mapping_id, '=')
+      ->execute();
+  }
 }
