@@ -21,9 +21,10 @@ class Salesforce {
    */
   public function __construct($consumer_key, $consumer_secret = '') {
     $config = config('salesforce.settings');
+    $auth_config = config('salesforce.auth_settings');
     $this->consumer_key = $consumer_key;
     $this->consumer_secret = $consumer_secret;
-    $this->login_url = $config->get('salesforce_endpoint');
+    $this->login_url = $auth_config->get('salesforce_endpoint');
 
     $this->rest_api_version = $config->get('salesforce_api_version');
   }
@@ -269,8 +270,7 @@ class Salesforce {
    * Get the SF instance URL. Useful for linking to objects.
    */
   public function getInstanceUrl() {
-    $config = config('salesforce.settings');
-    return $config->get('salesforce_instance_url');
+    return config_get('salesforce.auth_settings', 'salesforce_instance_url');
   }
 
   /**
@@ -280,15 +280,14 @@ class Salesforce {
    *   URL to set.
    */
   protected function setInstanceUrl($url) {
-    config_set('salesforce.settings', 'salesforce_instance_url', $url);
+    config_set('salesforce.auth_settings', 'salesforce_instance_url', $url);
   }
 
   /**
    * Get the access token.
    */
   public function getAccessToken() {
-    $config = config('salesforce.settings');
-    return $config->get('salesforce_access_token');
+    return config_get('salesforce.auth_settings', 'salesforce_access_token');
   }
 
   /**
@@ -300,15 +299,14 @@ class Salesforce {
    *   Access token from Salesforce.
    */
   protected function setAccessToken($token) {
-    config_set('salesforce.settings', 'salesforce_access_token', $token);
+    config_set('salesforce.auth_settings', 'salesforce_access_token', $token);
   }
 
   /**
    * Get refresh token.
    */
   protected function getRefreshToken() {
-    $config = config('salesforce.settings');
-    return $config->get('salesforce_refresh_token');
+    return config_get('salesforce.auth_settings', 'salesforce_refresh_token');
   }
 
   /**
@@ -318,8 +316,7 @@ class Salesforce {
    *   Refresh token from Salesforce.
    */
   protected function setRefreshToken($token) {
-
-    config_set('salesforce.settings', 'salesforce_refresh_token', $token);
+    config_set('salesforce.auth_settings', 'salesforce_refresh_token', $token);
   }
 
   /**
@@ -378,7 +375,7 @@ class Salesforce {
       throw new SalesforceException(t('Unable to access identity service.'), $response->code);
     }
     $data = backdrop_json_decode($response->data);
-    config_set('salesforce.settings', 'salesforce_identity', $data);
+    config_set('salesforce.auth_settings', 'salesforce_identity', $data);
   }
 
   /**
@@ -390,7 +387,7 @@ class Salesforce {
    * @throws SalesforceException
    */
   public function getIdentity() {
-    $config = config('salesforce.settings');
+    $config = config('salesforce.auth_settings');
     $identity = $config->get('salesforce_identity');
     if ($identity) {
       $id_url_scheme = parse_url($identity['id']);

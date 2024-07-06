@@ -86,7 +86,6 @@ class SalesforceSoapPartner extends SforcePartnerClient {
    * @see SforcePartnerClient()
    */
   public function trySoap($function) {
-    $config = config('salesforce_soap.settings');
     $args = func_get_args();
     array_shift($args);
 
@@ -116,7 +115,7 @@ class SalesforceSoapPartner extends SforcePartnerClient {
       // If we've already tried a refresh, this refresh token is probably
       // invalid. Kill it, log, and bubble the exception.
       $this->setConnected(FALSE);
-      update_variable_del('salesforce_refresh_token');
+      config_set('salesforce_soap.settings', 'salesforce_refresh_token', '');
       $link = l(t('the Salesforce configuration page'), 'admin/config/services/salesforce');
       $message = t('Your website is not authorized to connect with Salesforce. Please visit !config to authorize your site.', array('!config' => $link));
       salesforce_set_message($message, $error, FALSE);

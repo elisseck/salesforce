@@ -24,7 +24,7 @@ function salesforce_config_info() {
  * Implements hook_help().
  */
 function salesforce_help($path, $arg) {
-  $config = config('salesforce.settings');
+  $config = config('salesforce.auth_settings');
   switch ($path) {
     case 'admin/structure/salesforce':
       $output = '';
@@ -177,7 +177,7 @@ function salesforce_flush_caches() {
  *   The Salesforce authorization form.
  */
 function salesforce_oauth_form() {
-  $config = config('salesforce.settings');
+  $config = config('salesforce.auth_settings');
   // Overlay doesn't work. See https://www.drupal.org/node/2268401.
   if (module_exists('overlay') && overlay_get_mode() == 'child') {
     $current_path = current_path();
@@ -269,9 +269,9 @@ function salesforce_oauth_form_submit($form, &$form_state) {
   $consumer_key = $form_state['values']['salesforce_consumer_key'];
   $consumer_secret = $form_state['values']['salesforce_consumer_secret'];
   $salesforce_endpoint = empty($form_state['values']['salesforce_endpoint']) ? SALESFORCE_DEFAULT_ENDPOINT : $form_state['values']['salesforce_endpoint'];
-  config_set('salesforce.settings', 'salesforce_consumer_key', $consumer_key);
-  config_set('salesforce.settings', 'salesforce_consumer_secret', $consumer_secret);
-  config_set('salesforce.settings', 'salesforce_endpoint', $salesforce_endpoint);
+  config_set('salesforce.auth_settings', 'salesforce_consumer_key', $consumer_key);
+  config_set('salesforce.auth_settings', 'salesforce_consumer_secret', $consumer_secret);
+  config_set('salesforce.auth_settings', 'salesforce_endpoint', $salesforce_endpoint);
 
   $salesforce = new Salesforce($consumer_key, $consumer_secret);
   $salesforce->getAuthorizationCode();
@@ -373,7 +373,7 @@ function salesforce_oauth_callback() {
  *   Returns a Salesforce class object.
  */
 function salesforce_get_api() {
-  $config = config('salesforce.settings');
+  $config = config('salesforce.auth_settings');
   return new Salesforce(
     $config->get('salesforce_consumer_key'),
     $config->get('salesforce_consumer_secret')

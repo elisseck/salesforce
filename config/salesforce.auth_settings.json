@@ -1,0 +1,10 @@
+{
+    "_config_name": "salesforce.auth_settings",
+    "salesforce_endpoint": "https://login.salesforce.com",
+    "salesforce_instance_url": "",
+    "salesforce_access_token": "",
+    "salesforce_refresh_token": "",
+    "salesforce_identity": "",
+    "salesforce_consumer_key": "",
+    "salesforce_consumer_secret": ""
+}

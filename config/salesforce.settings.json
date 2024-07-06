@@ -1,16 +1,8 @@
 {
     "_config_name": "salesforce.settings",
-    "salesforce_endpoint": "https://login.salesforce.com",
     "salesforce_api_version": {
         "label" : "Summer '14",
         "url" : "/services/data/v31.0",
         "version" : "31.0"
-    },
-    "salesforce_instance_url": "",
-    "salesforce_access_token": "",
-    "salesforce_refresh_token": "",
-    "salesforce_identity": "",
-    "salesforce_consumer_key": "",
-    "salesforce_consumer_secret": "",
-    "salesforce_limit_to_updateable": true
+    }
 }
