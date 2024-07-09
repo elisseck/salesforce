@@ -91,6 +91,8 @@ Installation
 - Install any of the other modules if needed to pull from and push data to
 Salesforce.
 
+- If your site is under version control, consider adding `config/staging/salesforce.auth_settings.json` to your `.gitignore` file to ensure sensitive credentials are not committed to the repository.
+
 Issues
 ------
 
