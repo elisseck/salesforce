@@ -311,7 +311,6 @@ function salesforce_settings_form($form, &$form_state) {
     $options[$api['version']] = $api['label'] . ' (' . $api['version'] . ')';
   }
 
-  $form['#config'] = 'salesforce.settings';
   $form['salesforce_api_version'] = [
     '#type' => 'select',
     '#title' => t('API Version'),
