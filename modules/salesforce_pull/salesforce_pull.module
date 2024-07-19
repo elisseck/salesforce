@@ -332,7 +332,6 @@ function salesforce_pull_process_updated_records($sf_object) {
       if ($exists && ($sf_mapping->sync_triggers & SALESFORCE_MAPPING_SYNC_SF_UPDATE)) {
         try {
           $entity = entity_load($mapping_object->entity_type, $mapping_object->entity_id);
-          $entity = reset($entity);
           if ($entity === FALSE) {
             $exists = FALSE;
             $message = t('Unable to update %type entity %label from Salesforce object %sfobjectid. Entity does not exist. Mapping removed, continuing with Create instead Update.',
