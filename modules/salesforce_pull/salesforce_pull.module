@@ -84,14 +84,13 @@ function salesforce_pull_cron() {
  * Callback for the standard pull process used by webhooks and cron.
  */
 function salesforce_pull() {
-  $config = config('salesforce_pull.settings');
   $sfapi = salesforce_get_api();
   if ($sfapi->isAuthorized() && salesforce_pull_check_throttle()) {
     salesforce_pull_get_updated_records();
     salesforce_pull_get_deleted_records();
 
     // Store this request time for the throttle check.
-    $config->get('salesforce_pull_last_sync');
+    state_set('salesforce_pull_last_sync', REQUEST_TIME);
 
     return TRUE;
   }
@@ -148,7 +147,7 @@ function salesforce_pull_webhook_key_validate($element, &$form_state, $form) {
 function salesforce_pull_check_throttle() {
   $config = config('salesforce_pull.settings');
   $pull_throttle = $config->get('salesforce_pull_throttle');
-  $last_sync = $config->get('salesforce_pull_last_sync');
+  $last_sync = state_get('salesforce_pull_last_sync');
 
   if (REQUEST_TIME > $last_sync + $pull_throttle) {
     return TRUE;
@@ -216,7 +215,7 @@ function salesforce_pull_get_updated_records() {
           str_replace($version_path, '', $new_result['nextRecordsUrl']) : FALSE;
       }
 
-      config_set('salesforce_pull.settings','salesforce_pull_last_sync_' . $type, REQUEST_TIME);
+      state_set('salesforce_pull_last_sync_' . $type, REQUEST_TIME);
     }
     else {
       watchdog('Salesforce Pull', $results['errorCode'] . ':' . $results['message'], array(), WATCHDOG_ERROR);
@@ -276,7 +275,7 @@ function salesforce_pull_get_pull_query($type) {
   ));
 
   // If no lastupdate, get all records, else get records since last pull.
-  $sf_last_sync = $config->get('salesforce_pull_last_sync_' . $type);
+  $sf_last_sync = state_get('salesforce_pull_last_sync_' . $type);
   if ($sf_last_sync) {
     $last_sync = gmdate('Y-m-d\TH:i:s\Z', $sf_last_sync);
     $soql->addCondition($mapping->pull_trigger_date, $last_sync, '>');
@@ -550,8 +549,8 @@ function salesforce_pull_get_deleted_records() {
 
   // Load all unique SF record types that we have mappings for.
   foreach (array_reverse(salesforce_mapping_get_mapped_objects()) as $type) {
-    $last_delete_sync = $config->get('salesforce_pull_delete_last_' . $type);
-    config_set('salesforce_pull.settings','salesforce_pull_delete_last_' . $type, REQUEST_TIME);
+    $last_delete_sync = state_get('salesforce_pull_delete_last_' . $type);
+    state_set('salesforce_pull_delete_last_' . $type, REQUEST_TIME);
     $version_path = parse_url($sfapi->getApiEndPoint(), PHP_URL_PATH);
     $queue = BackdropQueue::get(SALESFORCE_PULL_QUEUE);
     $now = time();
@@ -641,7 +640,7 @@ function salesforce_pull_get_deleted_records() {
           str_replace($version_path, '', $new_result->nextRecordsUrl) : FALSE;
       }
 
-      config_set('salesforce_pull.settings','salesforce_pull_last_sync_' . $type, REQUEST_TIME);
+      state_set('salesforce_pull_last_sync_' . $type, REQUEST_TIME);
 
     }
 
@@ -761,7 +760,7 @@ function salesforce_pull_check_merged_records($merge_record_type) {
     return array('records' => array());
   }
 
-  $last_delete_sync = $config->get('salesforce_pull_delete_last_' . $merge_fields['type']);
+  $last_delete_sync = state_get('salesforce_pull_delete_last_' . $merge_fields['type']);
 
   $soql = new SalesforceSelectQuery($merge_fields['type']);
 
@@ -774,7 +773,7 @@ function salesforce_pull_check_merged_records($merge_record_type) {
   );
 
   // If no lastupdate, get all records, else get records since last pull.
-  $sf_last_sync = $config->get('salesforce_pull_last_sync_' . $merge_fields['type']);
+  $sf_last_sync = state_get('salesforce_pull_last_sync_' . $merge_fields['type']);
   if ($sf_last_sync) {
     $last_sync = gmdate('Y-m-d\TH:i:s\Z', $sf_last_sync);
     $soql->addCondition($last_delete_sync, $last_sync, '>');

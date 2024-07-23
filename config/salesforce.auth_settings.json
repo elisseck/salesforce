@@ -6,5 +6,6 @@
     "salesforce_refresh_token": "",
     "salesforce_identity": "",
     "salesforce_consumer_key": "",
-    "salesforce_consumer_secret": ""
+    "salesforce_consumer_secret": "",
+    "salesforce_pull_webhook_key": ""
 }

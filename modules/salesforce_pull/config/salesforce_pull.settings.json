@@ -2,11 +2,7 @@
     "_config_name": "salesforce_pull.settings",
     "salesforce_contact_merge_record" : "",
     "salesforce_partner_wsdl": "",
-    "salesforce_pull_delete_last_type": [],
-    "salesforce_pull_last_sync": 0,
-    "salesforce_pull_last_sync_type": [],
     "salesforce_pull_max_queue_size": 100000,
     "salesforce_pull_throttle": 5,
-    "salesforce_pull_webhook_enable": false,
-    "salesforce_pull_webhook_key": ""
+    "salesforce_pull_webhook_enable": false
 }

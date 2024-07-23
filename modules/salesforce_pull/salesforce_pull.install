@@ -6,44 +6,30 @@
  */
 
 /**
- * Implements hook_uninstall().
- */
-function salesforce_pull_uninstall() {
-  config_clear('salesforce_pull.settings', 'salesforce_contact_merge_record');
-  config_clear('salesforce_pull.settings', 'salesforce_partner_wsdl');
-  config_clear('salesforce_pull.settings', 'salesforce_pull_delete_last_type');
-  config_clear('salesforce_pull.settings', 'salesforce_pull_last_sync');
-  config_clear('salesforce_pull.settings', 'salesforce_pull_last_sync_type');
-  config_clear('salesforce_pull.settings', 'salesforce_pull_max_queue_size');
-  config_clear('salesforce_pull.settings', 'salesforce_pull_throttle');
-  config_clear('salesforce_pull.settings', 'salesforce_pull_webhook_enable');
-  config_clear('salesforce_pull.settings', 'salesforce_pull_webhook_key');
-}
-
-/**
  * Migrate salesforce_pull variables to config.
  */
 function salesforce_pull_update_1000() {
   $config = config('salesforce_pull.settings');
   $config->set('salesforce_contact_merge_record', update_variable_get('salesforce_contact_merge_record', NULL));
   $config->set('salesforce_partner_wsdl', update_variable_get('salesforce_partner_wsdl', ''));
-  $config->set('salesforce_pull_last_sync', update_variable_get('salesforce_pull_last_sync', '0'));
   $config->set('salesforce_pull_max_queue_size', update_variable_get('salesforce_pull_max_queue_size', '100000'));
   $config->set('salesforce_pull_throttle', update_variable_get('salesforce_pull_throttle', '5'));
   $config->set('salesforce_pull_webhook_enable', update_variable_get('salesforce_pull_webhook_enable', FALSE));
-  $config->set('salesforce_pull_webhook_key', update_variable_get('salesforce_pull_webhook_key', ''));
-
-  foreach (salesforce_mapping_get_mapped_objects() as $type) {
-    $current_last_sync_variable = 'salesforce_pull_last_sync_' . $type;
-    $current_last_sync_value = update_variable_get($current_last_sync_variable);
-    $config->set('salesforce_pull_last_sync_type.' . $type, $current_last_sync_value);
-    update_variable_del($current_last_sync_variable);
-    $current_delete_last_variable = 'salesforce_pull_delete_last_' . $type;
-    $current_delete_last_value = update_variable_get($current_delete_last_variable);
-    $config->set('salesforce_pull_delete_last_type.' . $type, $current_delete_last_value);
-    update_variable_del($current_delete_last_variable);
-  }
   $config->save();
+
+  // The webhook key is stored in the base module's auth_settings file together
+  // with the other Salesforce authentication credentials.
+  config_set('salesforce.auth_settings', 'salesforce_pull_webhook_key', update_variable_get('salesforce_pull_webhook_key', ''));
+
+  state_set('salesforce_pull_last_sync', update_variable_get('salesforce_pull_last_sync', '0'));
+  foreach (salesforce_mapping_get_mapped_objects() as $type) {
+    $last_sync_variable = 'salesforce_pull_last_sync_' . $type;
+    state_set($last_sync_variable, update_variable_get($last_sync_variable));
+    update_variable_del($last_sync_variable);
+    $delete_last_variable = 'salesforce_pull_delete_last_' . $type;
+    state_set($delete_last_variable, update_variable_get($delete_last_variable));
+    update_variable_del($delete_last_variable);
+  }
 
   update_variable_del('salesforce_contact_merge_record');
   update_variable_del('salesforce_partner_wsdl');
