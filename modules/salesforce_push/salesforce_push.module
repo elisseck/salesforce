@@ -8,6 +8,17 @@
 define('SALESFORCE_PUSH_QUEUE', 'salesforce_push');
 
 /**
+ * Implements hook_config_info().
+ */
+function salesforce_push_config_info() {
+  $prefixes['salesforce_push.settings'] = [
+    'label' => t('Salesforce Push settings'),
+    'group' => t('Configuration'),
+  ];
+  return $prefixes;
+}
+
+/**
  * Implements hook_entity_insert().
  */
 function salesforce_push_entity_insert($entity, $type) {

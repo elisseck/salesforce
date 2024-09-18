@@ -11,6 +11,17 @@
 define('SALESFORCE_PULL_QUEUE', 'salesforce_pull');
 
 /**
+ * Implements hook_config_info().
+ */
+function salesforce_pull_config_info() {
+  $prefixes['salesforce_pull.settings'] = [
+    'label' => t('Salesforce Pull settings'),
+    'group' => t('Configuration'),
+  ];
+  return $prefixes;
+}
+
+/**
  * Implements hook_menu().
  */
 function salesforce_pull_menu() {
