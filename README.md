@@ -101,18 +101,16 @@ Bugs and feature requests should be reported in [the Issue Queue](https://github
 Current Maintainers
 -------------------
 
-- [Alejandro Madrigal](https://github.com/alemadlei).
 - [Eli Lisseck](https://github.com/elisseck).
--
-- Seeking additional maintainers.
+- [Anthony Nemirovsky](https://github.com/anemirovsky).
 
 Credits
 -------
 
+- Backdrop development supported by [USENIX](https://www.usenix.org/).
+- Backdrop development supported by [Giant Rabbit](https://giantrabbit.com).
 - Originally written for Drupal by [Steve McKenzie](http://drupal.org/user/45890).
-- Ported to Backdrop CMS by [Alejandro Madrigal](https://github.com/alemadlei).
-- Code review and maintainer [Eli Lisseck](https://github.com/elisseck).
-- Supporting organization [Giant Rabbit](https://github.com/giant-rabbit)
+- Ported to Backdrop CMS by [Alejandro Madrigal](https://github.com/alemadlei) & [Eli Lisseck](https://github.com/elisseck).
 
 License
 -------
