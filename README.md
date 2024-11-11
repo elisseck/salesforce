@@ -93,6 +93,39 @@ Salesforce.
 
 - If your site is under version control, consider adding `config/staging/salesforce.auth_settings.json` to your `.gitignore` file to ensure sensitive credentials are not committed to the repository.
 
+Changes from D7:
+----------------
+
+New storage methods for what were variables in Drupal 7:
+
+salesforce.settings.json
+    salesforce_api_version
+
+salesforce.auth_settings.json
+    salesforce_endpoint
+    salesforce_instance_url
+    salesforce_access_token
+    salesforce_refresh_token
+    salesforce_identity
+    salesforce_consumer_key
+    salesforce_consumer_secret
+    salesforce_pull_webhook_key
+
+salesforce_pull.settings.json
+    salesforce_contact_merge_record
+    salesforce_partner_wsdl
+    salesforce_pull_max_queue_size
+    salesforce_pull_throttle
+    salesforce_pull_webhook_enable
+
+salesforce_push.settings.json
+    salesforce_push_limit
+
+in state
+    salesforce_pull_last_sync
+    salesforce_pull_last_sync_{entity_type}
+    salesforce_pull_delete_last_{entity_type}
+
 Issues
 ------
 
