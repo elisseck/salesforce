@@ -38,7 +38,8 @@ function salesforce_requirements($phase) {
       return $requirements;
     }
     // Check if the site is authorized with Salesforce.
-    $sfapi = new Salesforce($auth_config->get('salesforce_consumer_key'), $auth_config->get('salesforce_consumer_key'));
+    $consumer_secret = salesforce_get_consumer_secret();
+    $sfapi = new Salesforce($auth_config->get('salesforce_consumer_key'), $consumer_secret);
     if ($sfapi->isAuthorized()) {
       try {
         $resources = $sfapi->listResources();
@@ -71,8 +72,6 @@ function salesforce_schema() {
   return $schema;
 }
 
-// TODO The old hook_update_N functions cannot be applied to Backdrop.
-
 /**
  * Migrate salesforce variables to config.
  */
@@ -103,6 +102,40 @@ function salesforce_update_1000() {
   update_variable_del('salesforce_identity');
   update_variable_del('salesforce_consumer_key');
   update_variable_del('salesforce_consumer_secret');
+}
+
+/**
+ * Migrate salesforce_auth configuration to state and settings, and non-sensitive config to salesforce.settings
+ */
+function salesforce_update_1001() {
+  $config = config('salesforce.settings');
+  $auth_config = config('salesforce.auth_settings');
+  $consumer_secret = salesforce_get_consumer_secret();
+  if (!$consumer_secret) {
+    throw new \Exception(t('Salesforce consumer secret must be set in config/private, see readme.md'));
+  }
+  $config->set('salesforce_consumer_key', $auth_config->get('salesforce_consumer_key'));
+  $config->set('salesforce_endpoint', $auth_config->get('salesforce_endpoint'));
+  $config->save();
+  
+  state_set('salesforce_instance_url', $auth_config->get('salesforce_instance_url'));
+  state_set('salesforce_identity', $auth_config->get('salesforce_identity'));
+  $secret = substr($consumer_secret, 0, SODIUM_CRYPTO_SECRETBOX_KEYBYTES);
+  $nonce = random_bytes(SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+  $ciphertext = sodium_crypto_secretbox($auth_config->get('salesforce_access_token'), $nonce, $secret);
+  state_set('salesforce_access_token', $ciphertext);
+  state_set('salesforce_access_token_nonce', $nonce);
+  $nonce = random_bytes(SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+  $ciphertext = sodium_crypto_secretbox($auth_config->get('salesforce_refresh_token'), $nonce, $secret);
+  state_set('salesforce_refresh_token', $ciphertext);
+  state_set('salesforce_refresh_token_nonce', $nonce);
+
+  $auth_config->clear('salesforce_consumer_secret');
+  $auth_config->clear('salesforce_instance_url');
+  $auth_config->clear('salesforce_access_token');
+  $auth_config->clear('salesforce_refresh_token');
+  $auth_config->clear('salesforce_identity');
+  $auth_config->save();
 }
 
 /**
