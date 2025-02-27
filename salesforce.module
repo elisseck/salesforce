@@ -113,7 +113,15 @@ function salesforce_oauth_form() {
 
   $consumer_key = $config->get('salesforce_consumer_key');
   $salesforce_endpoint = $config->get('salesforce_endpoint');
-  $consumer_secret = salesforce_get_consumer_secret();
+  try {
+    $consumer_secret = salesforce_get_consumer_secret();
+  }
+  catch (CantLoadSalesforceConsumerSecret $e) {
+    $form['message'] = [
+      '#type' => 'warning',
+      '#markup' => t($e->getMessage()),
+    ];
+  }
   if (!$consumer_secret) {
     $form['message'] = [
       '#type' => 'warning',

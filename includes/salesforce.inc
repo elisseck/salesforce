@@ -853,4 +853,6 @@ class Salesforce {
 
 class SalesforceException extends Exception { }
 
+class CantLoadSalesforceConsumerSecret extends \Exception { }
+
 class SalesforcePullException extends SalesforceException { }
