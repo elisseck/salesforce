@@ -122,12 +122,6 @@ function salesforce_oauth_form() {
       '#markup' => t($e->getMessage()),
     ];
   }
-  if (!$consumer_secret) {
-    $form['message'] = [
-      '#type' => 'warning',
-      '#markup' => t('No consumer secret file is present, or the file cannot be read. See readme.md for more details.'),
-    ];
-  }
 
   $form['message'] = [
     '#type' => 'item',
@@ -336,15 +330,15 @@ function salesforce_get_consumer_secret() {
         return $json->salesforce_consumer_secret;
       }
       else {
-        throw new \Exception(t('salesforce_consumer_secret file at ' . $secret_path . ' is malformed.'));        
+        throw new \CantLoadSalesforceConsumerSecret(t('salesforce_consumer_secret file at ' . $secret_path . ' is malformed.'));
       }
     }
     else {
-      throw new \Exception(t('salesforce_consumer_secret file at ' . $secret_path . ' exists, but is not readable.'));
+      throw new \CantLoadSalesforceConsumerSecret(t('salesforce_consumer_secret file at ' . $secret_path . ' exists, but is not readable.'));
     }
   }
   else {
-    throw new \Exception(t('No salesforce_consumer_secret file at ' . $secret_path));
+    throw new \CantLoadSalesforceConsumerSecret(t('No salesforce_consumer_secret file at ' . $secret_path));
   }
 }
 
