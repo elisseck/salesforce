@@ -160,7 +160,9 @@ function salesforce_mapping_related_entity_fieldmap_pull_value($entity_wrapper, 
   $info = $entity_wrapper->info();
   if ($mapping_object && !isset($info['relation_type'])) {
     $entity = entity_load($mapping_object->entity_type, $mapping_object->entity_id);
-    $entity = reset($entity);
+    if (is_array($entity)) {
+      $entity = reset($entity);
+    }
     return entity_metadata_wrapper($mapping_object->entity_type, $entity);
   }
   // Handle relations.
