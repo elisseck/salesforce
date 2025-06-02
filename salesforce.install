@@ -22,7 +22,7 @@ function salesforce_uninstall() {
  * Implements hook_requirements().
  */
 function salesforce_requirements($phase) {
-  $auth_config = config('salesforce.auth_settings');
+  $auth_config = config('salesforce.settings');
   $requirements = array();
 
   $t = get_t();
