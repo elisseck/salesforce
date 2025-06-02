@@ -243,7 +243,7 @@ function salesforce_mapping_object_filter_form($form, &$form_state) {
   $form['search']['last_sync']['from'] = array(
     '#type' => 'textfield',
     '#title' => t('From'),
-    '#default_value' => $values['last_sync']['from'],
+    '#default_value' => isset($values['last_sync']['from']) ? $values['last_sync']['from'] : '',
     '#description' => t('Format: %time.', array(
         '%time' => format_date(time(), 'custom', 'Y-m-d H:i:s'),
       )
@@ -253,7 +253,7 @@ function salesforce_mapping_object_filter_form($form, &$form_state) {
   $form['search']['last_sync']['to'] = array(
     '#type' => 'textfield',
     '#title' => t('To'),
-    '#default_value' => $values['last_sync']['to'],
+    '#default_value' => isset($values['last_sync']['to']) ? $values['last_sync']['to'] : '',
     '#description' => t('Format: %time.', array(
         '%time' => format_date(time(), 'custom', 'Y-m-d H:i:s'),
       )
