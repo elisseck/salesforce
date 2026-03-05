@@ -34,13 +34,16 @@ https://help.salesforce.com/help/doc/en/remoteaccess_about.htm
 3) Your site needs to be SSL enabled to authorize the remote application using
    OAUTH.
 
-4) If using the SOAP API, PHP to have been compiled with SOAP web services and
+4) libsodium-php extension. Packaged with PHP since 7.2. This library is used to encrypt
+    the refresh token and the access token that reside in state.
+
+5) If using the SOAP API, PHP to have been compiled with SOAP web services and
    OpenSSL support, as per:
 
 http://php.net/soap
 http://php.net/openssl
 
-5) Required modules
+6) Required modules
    Libraries, only for SOAP API - https://backdropcms.org/project/libraries
    Entity Plus & Entity UI, for Salesforce Mapping - https://backdropcms.org/project/entity_plus,
    https://backdropcms.org/project/entity_ui,
@@ -91,7 +94,17 @@ Installation
 - Install any of the other modules if needed to pull from and push data to
 Salesforce.
 
-- If your site is under version control, consider adding `config/staging/salesforce.auth_settings.json` to your `.gitignore` file to ensure sensitive credentials are not committed to the repository.
+- Place your Salesforce consumer secret in your config directory (alongside /staging and /active) at /private/salesforce_consumer_secret.json. The file should look like
+
+```
+{
+  "salesforce_consumer_secret":"your_secret_here"
+}
+```
+
+- If your site is under version control, consider adding `config/private/` to your `.gitignore` file to ensure sensitive credentials are not committed to the repository.
+
+- Sensitive but dynamic credientials (access token and refresh token) are stored in state, encrypted with your consumer secret.
 
 Issues
 ------
@@ -101,16 +114,18 @@ Bugs and feature requests should be reported in [the Issue Queue](https://github
 Current Maintainers
 -------------------
 
+- [Alejandro Madrigal](https://github.com/alemadlei).
 - [Eli Lisseck](https://github.com/elisseck).
 - [Anthony Nemirovsky](https://github.com/anemirovsky).
+- [Peter Haight](https://github.com/Dawnthorn).
 
 Credits
 -------
 
-- Backdrop development supported by [USENIX](https://www.usenix.org/).
-- Backdrop development supported by [Giant Rabbit](https://giantrabbit.com).
 - Originally written for Drupal by [Steve McKenzie](http://drupal.org/user/45890).
-- Ported to Backdrop CMS by [Alejandro Madrigal](https://github.com/alemadlei) & [Eli Lisseck](https://github.com/elisseck).
+- Ported to Backdrop CMS by [Alejandro Madrigal](https://github.com/alemadlei).
+- Code review and maintainer [Eli Lisseck](https://github.com/elisseck).
+- Supporting organization [Giant Rabbit](https://github.com/giant-rabbit)
 
 License
 -------

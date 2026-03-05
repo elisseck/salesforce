@@ -7,9 +7,14 @@
 /**
  * Ability to authorize and communicate with the Salesforce REST API.
  */
+#[\AllowDynamicProperties]
 class Salesforce {
 
   public $response;
+  private $consumer_key;
+  private $consumer_secret;
+  private $login_url;
+  private $rest_api_version;
 
   /**
    * Constructor which initializes the consumer.
@@ -21,10 +26,9 @@ class Salesforce {
    */
   public function __construct($consumer_key, $consumer_secret = '') {
     $config = config('salesforce.settings');
-    $auth_config = config('salesforce.auth_settings');
     $this->consumer_key = $consumer_key;
     $this->consumer_secret = $consumer_secret;
-    $this->login_url = $auth_config->get('salesforce_endpoint');
+    $this->login_url = $config->get('salesforce_endpoint');
 
     $this->rest_api_version = $config->get('salesforce_api_version');
   }
@@ -270,7 +274,7 @@ class Salesforce {
    * Get the SF instance URL. Useful for linking to objects.
    */
   public function getInstanceUrl() {
-    return config_get('salesforce.auth_settings', 'salesforce_instance_url');
+    return state_get('salesforce_instance_url');
   }
 
   /**
@@ -280,14 +284,17 @@ class Salesforce {
    *   URL to set.
    */
   protected function setInstanceUrl($url) {
-    config_set('salesforce.auth_settings', 'salesforce_instance_url', $url);
+    state_set('salesforce_instance_url', $url);
   }
 
   /**
    * Get the access token.
    */
   public function getAccessToken() {
-    return config_get('salesforce.auth_settings', 'salesforce_access_token');
+    $secret = substr(salesforce_get_consumer_secret(), 0, SODIUM_CRYPTO_SECRETBOX_KEYBYTES);
+    $ciphertext = state_get('salesforce_access_token');
+    $nonce = state_get('salesforce_access_token_nonce');
+    return sodium_crypto_secretbox_open($ciphertext, $nonce, $secret);
   }
 
   /**
@@ -299,14 +306,21 @@ class Salesforce {
    *   Access token from Salesforce.
    */
   protected function setAccessToken($token) {
-    config_set('salesforce.auth_settings', 'salesforce_access_token', $token);
+    $secret = substr(salesforce_get_consumer_secret(), 0, SODIUM_CRYPTO_SECRETBOX_KEYBYTES);
+    $nonce = random_bytes(SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+    $ciphertext = sodium_crypto_secretbox($token, $nonce, $secret);
+    state_set('salesforce_access_token', $ciphertext);
+    state_set('salesforce_access_token_nonce', $nonce);
   }
 
   /**
    * Get refresh token.
    */
   protected function getRefreshToken() {
-    return config_get('salesforce.auth_settings', 'salesforce_refresh_token');
+    $secret = substr(salesforce_get_consumer_secret(), 0, SODIUM_CRYPTO_SECRETBOX_KEYBYTES);
+    $ciphertext = state_get('salesforce_refresh_token');
+    $nonce = state_get('salesforce_refresh_token_nonce');
+    return sodium_crypto_secretbox_open($ciphertext, $nonce, $secret);
   }
 
   /**
@@ -316,7 +330,11 @@ class Salesforce {
    *   Refresh token from Salesforce.
    */
   protected function setRefreshToken($token) {
-    config_set('salesforce.auth_settings', 'salesforce_refresh_token', $token);
+    $secret = substr(salesforce_get_consumer_secret(), 0, SODIUM_CRYPTO_SECRETBOX_KEYBYTES);
+    $nonce = random_bytes(SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+    $ciphertext = sodium_crypto_secretbox($token, $nonce, $secret);
+    state_set('salesforce_refresh_token', $ciphertext);
+    state_set('salesforce_refresh_token_nonce', $nonce);
   }
 
   /**
@@ -375,7 +393,7 @@ class Salesforce {
       throw new SalesforceException(t('Unable to access identity service.'), $response->code);
     }
     $data = backdrop_json_decode($response->data);
-    config_set('salesforce.auth_settings', 'salesforce_identity', $data);
+    state_set('salesforce_identity', $data);
   }
 
   /**
@@ -387,8 +405,8 @@ class Salesforce {
    * @throws SalesforceException
    */
   public function getIdentity() {
-    $config = config('salesforce.auth_settings');
-    $identity = $config->get('salesforce_identity');
+    $config = config('salesforce.settings');
+    $identity = state_get('salesforce_identity');
     if ($identity) {
       $id_url_scheme = parse_url($identity['id']);
       $allowed_endpoint = $config->get('salesforce_endpoint');
@@ -835,5 +853,7 @@ class Salesforce {
 }
 
 class SalesforceException extends Exception { }
+
+class CantLoadSalesforceConsumerSecret extends \Exception { }
 
 class SalesforcePullException extends SalesforceException { }

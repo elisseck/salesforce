@@ -17,85 +17,11 @@ function salesforce_config_info() {
     'label' => t('Salesforce API settings'),
     'group' => t('Configuration'),
   ];
+  $prefixes['salesforce.auth_settings'] = [
+    'label' => t('Salesforce Auth settings'),
+    'group' => t('Configuration'),
+  ];
   return $prefixes;
-}
-
-/**
- * Implements hook_help().
- */
-function salesforce_help($path, $arg) {
-  $config = config('salesforce.auth_settings');
-  switch ($path) {
-    case 'admin/structure/salesforce':
-      $output = '';
-      if (!module_exists('salesforce_mapping')) {
-        $output .= '<p>' . t('In order to configure Salesforce Mappings, you must first enable the <a href="/admin/modules">Salesforce Mapping</a> module and at least one sync method (Push or Pull).') . '</p>';
-      }
-      if (!$config->get('salesforce_consumer_secret') || !$config->get('salesforce_consumer_key') || !$config->get('salesforce_refresh_token')) {
-        $output .= '<p>' . t('You must !authorize in order to configure Salesforce Mappings.', ['!authorize' => l(t('authorize your account with Salesforce'), 'admin/config/salesforce/authorize')]) . '</p>';
-      }
-      return $output;
-
-    case 'admin/help#salesforce':
-      $output = '';
-      $output .= '<h3>' . t('About') . '</h3>';
-      $output .= '<p>' . t('This module suite implements a mapping functionality between Salesforce
-  objects and Backdrop entities. In other words, for each of your supported Backdrop
-  entities (e.g. node, user, or entities supported by extensions), you can
-  assign Salesforce objects that will be created / updated when the entity is
-  saved. For each such assignment, you choose which Backdrop and Salesforce fields
-  should be mapped to one another.') . '</p>';
-      $output .= '<p>' . t('This suite also includes an API architecture which allows for additional
-  modules to be easily plugged in (e.g. for webforms, contact form submits,
-  etc).') . '</p>';
-
-      $output .= '<p>' . t('For a more detailed description of each component module, see below.') . '</p>';
-      $output .= '<h3>' . t('Requirements') . '</h3>';
-      $output .= '<ol>';
-      $output .= '<li>' . t('You need a Salesforce account. Developers can !register_here.', ['!register_here' => l(t('register here'), 'http://www.developerforce.com/events/regular/registration.php')]) . '</li>';
-      $output .= '<li>' . t('You will need to create a remote application/connected app for authorization.') . '</li>';
-      $output .= '<ul>';
-      $output .= '<li>' . t('In Salesforce go to Your Name > Setup > Create > Apps then create a new Connected App. (Depending on your Salesforce instance, you may need to go to Your Name > Setup > Develop > Remote Access.)') . '</li>';
-      $output .= '<li>' . t('Set the callback URL to: !url (SSL is required)', [
-          '!url' => '<code>' . url('salesforce/oauth_callback', [
-              'absolute' => TRUE,
-              'https' => TRUE,
-            ]) . '</code>',
-        ]) . '</li>';
-      $output .= '<li>' . t('Select at least "Perform requests on your behalf at any time" for OAuth Scope
-  as well as the appropriate other scopes for your application. Note that "Full access" does not include the "Perform requests on your behalf at any time" scope! !info.', ['!info' => l(t('Additional information'), 'https://help.salesforce.com/help/doc/en/remoteaccess_about.htm')]) . '</li>';
-      $output .= '<li>' . t('For more help see !salesforce.', ['!salesforce' => l(t('the salesforce.com documentation'), 'https://www.salesforce.com/us/developer/docs/api_rest/Content/quickstart_oauth.htm')]) . '</li>';
-      $output .= '</ul>';
-      $output .= '<li>' . t('Your site needs to be SSL enabled to authorize the remote application using OAUTH.') . '</li>';
-      $output .= '<li>' . t('If using the SOAP API, PHP must be compiled with !SOAP and !SSL.',
-          [
-            '!SOAP' => l(t('SOAP web services'), 'http://php.net/soap'),
-            '!SSL' => l(t('OpenSSL support'), 'http://php.net/openssl'),
-          ]
-        ) . '</li>';
-      $output .= '</ol>';
-      $output .= '<h4>' . t('Required modules') . '</h4>';
-      $output .= '<ul>';
-      $output .= '<li>' . l(t('Entity Plus'), 'http://backdropcms.org/project/entity_plus') . '</li>';
-      $output .= '</ul>';
-      $output .= '<h3>' . t('Modules') . '</h3>';
-      $output .= '<h4>' . t('Salesforce (salesforce)') . '</h4>';
-      $output .= '<p>' . t('OAUTH2 authorization and wrapper around the Salesforce REST API.') . '</p>';
-      $output .= '<h4>' . t('Salesforce Mapping (salesforce_mapping)') . '</h4>';
-      $output .= '<p>' . t('Map Backdrop entities to Salesforce fields, including field level mapping.') . '</p>';
-      $output .= '<h4>' . t('Salesforce Push (salesforce_push)') . '</h4>';
-      $output .= '<p>' . t('Push Backdrop entity updates into Salesforce.') . '</p>';
-      $output .= '<h4>' . t('Salesforce Pull (salesforce_pull)') . '</h4>';
-      $output .= '<p>' . t('Pull Salesforce object updates into Backdrop on cron run. (Salesforce Outbound Notifications are not supported.)') . '</p>';
-      $output .= '<h4>' . t('Salesforce Soap (salesforce_soap)') . '</h4>';
-      $output .= '<p>' . t('Lightweight wrapper around the SOAP API, using the OAUTH access token, to fill in functional gaps missing in the REST API. Requires the Salesforce PHP Toolkit.') . '</p>';
-      $output .= '<p>' . t('Example installation of the Salesforce PHP Toolkit using the provided Drush Make file:') . ' <code>drush make /path/to/salesforce/modules/salesforce_soap/salesforce_soap.make.example --no-core -y</code>' . '</p>';
-      return $output;
-
-    case 'admin/config/salesforce':
-    case 'admin/config/salesforce/authorize':
-      return '<p>' . t('Visit !help if you need help obtaining a consumer key and secret.', ['!help' => l(t('the Salesforce module help page'), 'admin/help/salesforce')]) . '</p>';
-  }
 }
 
 /**
@@ -177,7 +103,7 @@ function salesforce_flush_caches() {
  *   The Salesforce authorization form.
  */
 function salesforce_oauth_form() {
-  $config = config('salesforce.auth_settings');
+  $config = config('salesforce.settings');
   // Overlay doesn't work. See https://www.drupal.org/node/2268401.
   if (module_exists('overlay') && overlay_get_mode() == 'child') {
     $current_path = current_path();
@@ -186,8 +112,16 @@ function salesforce_oauth_form() {
   $form = [];
 
   $consumer_key = $config->get('salesforce_consumer_key');
-  $consumer_secret = $config->get('salesforce_consumer_secret');
   $salesforce_endpoint = $config->get('salesforce_endpoint');
+  try {
+    $consumer_secret = salesforce_get_consumer_secret();
+  }
+  catch (CantLoadSalesforceConsumerSecret $e) {
+    $form['message'] = [
+      '#type' => 'warning',
+      '#markup' => t($e->getMessage()),
+    ];
+  }
 
   $form['message'] = [
     '#type' => 'item',
@@ -200,13 +134,6 @@ function salesforce_oauth_form() {
     '#description' => t('Consumer key of the Salesforce remote application you want to grant access to'),
     '#required' => TRUE,
     '#default_value' => $consumer_key,
-  ];
-  $form['salesforce_consumer_secret'] = [
-    '#title' => t('Salesforce consumer secret'),
-    '#type' => 'textfield',
-    '#description' => t('Consumer secret of the Salesforce remote application you want to grant access to'),
-    '#required' => TRUE,
-    '#default_value' => $consumer_secret,
   ];
   $form['advanced'] = [
     '#title' => t('Advanced'),
@@ -267,11 +194,10 @@ function salesforce_oauth_form() {
  */
 function salesforce_oauth_form_submit($form, &$form_state) {
   $consumer_key = $form_state['values']['salesforce_consumer_key'];
-  $consumer_secret = $form_state['values']['salesforce_consumer_secret'];
+  $consumer_secret = salesforce_get_consumer_secret();
   $salesforce_endpoint = empty($form_state['values']['salesforce_endpoint']) ? SALESFORCE_DEFAULT_ENDPOINT : $form_state['values']['salesforce_endpoint'];
-  config_set('salesforce.auth_settings', 'salesforce_consumer_key', $consumer_key);
-  config_set('salesforce.auth_settings', 'salesforce_consumer_secret', $consumer_secret);
-  config_set('salesforce.auth_settings', 'salesforce_endpoint', $salesforce_endpoint);
+  config_set('salesforce.settings', 'salesforce_consumer_key', $consumer_key);
+  config_set('salesforce.settings', 'salesforce_endpoint', $salesforce_endpoint);
 
   $salesforce = new Salesforce($consumer_key, $consumer_secret);
   $salesforce->getAuthorizationCode();
@@ -385,11 +311,35 @@ function salesforce_oauth_callback() {
  *   Returns a Salesforce class object.
  */
 function salesforce_get_api() {
-  $config = config('salesforce.auth_settings');
+  $config = config('salesforce.settings');
+  $consumer_secret = salesforce_get_consumer_secret();
   return new Salesforce(
     $config->get('salesforce_consumer_key'),
-    $config->get('salesforce_consumer_secret')
+    $consumer_secret
   );
+}
+
+function salesforce_get_consumer_secret() {
+  $config = config('salesforce.settings');
+  $secret_path = $config->get('salesforce_consumer_secret_path') . '/salesforce_consumer_secret.json';
+  if (file_exists($secret_path)) {
+    if (is_readable($secret_path)) {
+      $file = file_get_contents($secret_path);
+      $json = json_decode($file);
+      if ($json && property_exists($json, 'salesforce_consumer_secret')) {
+        return $json->salesforce_consumer_secret;
+      }
+      else {
+        throw new \CantLoadSalesforceConsumerSecret(t('salesforce_consumer_secret file at ' . $secret_path . ' is malformed.'));
+      }
+    }
+    else {
+      throw new \CantLoadSalesforceConsumerSecret(t('salesforce_consumer_secret file at ' . $secret_path . ' exists, but is not readable.'));
+    }
+  }
+  else {
+    throw new \CantLoadSalesforceConsumerSecret(t('No salesforce_consumer_secret file at ' . $secret_path));
+  }
 }
 
 /**

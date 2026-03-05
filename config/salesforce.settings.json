@@ -4,5 +4,8 @@
         "label" : "Summer '14",
         "url" : "/services/data/v31.0",
         "version" : "31.0"
-    }
+    },
+    "salesforce_consumer_secret_path": "",
+    "salesforce_consumer_key": "",
+    "salesforce_endpoint": ""
 }
