@@ -7,6 +7,7 @@
 /**
  * Ability to authorize and communicate with the Salesforce REST API.
  */
+#[\AllowDynamicProperties]
 class Salesforce {
 
   public $response;
