@@ -423,10 +423,12 @@ class Salesforce {
    */
   public function getAuthorizationCode() {
     $url = $this->login_url . '/services/oauth2/authorize';
+    $state = backdrop_get_token('salesforce_oauth');
     $query = [
       'redirect_uri' => $this->redirectUrl(),
       'response_type' => 'code',
       'client_id' => $this->consumer_key,
+      'state' => $state
     ];
 
     backdrop_goto($url, ['query' => $query]);

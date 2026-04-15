@@ -60,7 +60,7 @@ function salesforce_menu() {
   $items['salesforce/oauth_callback'] = [
     'title' => 'Salesforce oauth callback',
     'page callback' => 'salesforce_oauth_callback',
-    'access arguments' => ['access content'],
+    'access arguments' => ['administer salesforce'],
     'type' => MENU_CALLBACK,
   ];
 
@@ -288,6 +288,9 @@ function salesforce_settings_form_submit($form, &$form_state) {
 function salesforce_oauth_callback() {
   // If no code is provided, return access denied.
   if (!isset($_GET['code'])) {
+    return backdrop_access_denied();
+  }
+  if (!isset($_GET['state']) || !backdrop_valid_token($_GET['state'], 'salesforce_oauth')) {
     return backdrop_access_denied();
   }
   $salesforce = salesforce_get_api();
